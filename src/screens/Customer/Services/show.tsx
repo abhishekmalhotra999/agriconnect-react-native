@@ -1,10 +1,15 @@
 import React, {useEffect, useMemo, useState} from 'react';
 import {
   ActivityIndicator,
+  Linking,
   Platform,
+  Pressable,
+  Share,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import Header from '../../../containers/header';
@@ -17,11 +22,18 @@ import ProductInfo from '../../../components/Customer/Product/ProductInfo';
 import CheckoutButton from '../../../components/Customer/Cart/CheckoutButton';
 import ErrorText from '../../../components/UI/ErrorText';
 import {
+  createServiceListingReview,
   createServiceRequest,
   getServiceListingDetail,
+  getServiceListingReviews,
+  getServiceListingsByCategory,
 } from '../../../api/services.api';
-import Input from '../../../components/UI/Input';
 import {userContext} from '../../../contexts/UserContext';
+import {
+  isPreferenceSaved,
+  toggleSavedPreference,
+  trackRecentPreference,
+} from '../../../api/preferences.api';
 
 const ServiceDetails: React.FC<ServiceDetailsScreenProps> = ({
   route,
@@ -29,13 +41,25 @@ const ServiceDetails: React.FC<ServiceDetailsScreenProps> = ({
 }) => {
   const {product}: {product: Product} = route.params;
   const {user} = userContext();
+  const isCustomer = String(user?.accountType || '').toLowerCase() === 'customer';
   const [serviceDetail, setServiceDetail] = useState<Product>(product);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [saved, setSaved] = useState(false);
   const [images, setImages] = useState<any[]>([]);
-  const [message, setMessage] = useState('Need support for my farm setup.');
+  const [requesterName, setRequesterName] = useState(user?.name || '');
+  const [requesterPhone, setRequesterPhone] = useState(user?.phone || '');
+  const [requesterEmail, setRequesterEmail] = useState(user?.email || '');
+  const [message, setMessage] = useState('');
   const [requesting, setRequesting] = useState(false);
   const [success, setSuccess] = useState('');
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [relatedServices, setRelatedServices] = useState<Product[]>([]);
+  const [relatedLoading, setRelatedLoading] = useState(false);
 
   const sliderImages = useMemo(() => {
     if (images.length > 0) {
@@ -64,10 +88,52 @@ const ServiceDetails: React.FC<ServiceDetailsScreenProps> = ({
       try {
         setLoading(true);
         setError('');
-        const result = await getServiceListingDetail(product.id);
+        const [result, reviewList, savedState] = await Promise.all([
+          getServiceListingDetail(product.id),
+          getServiceListingReviews(product.id).catch(() => []),
+          isPreferenceSaved('service', product.id).catch(() => false),
+        ]);
+
         if (mounted) {
           setServiceDetail(result.product);
           setImages(result.images);
+          setReviews(reviewList);
+          setSaved(savedState);
+
+          trackRecentPreference('service', {
+            type: 'service',
+            id: String(result.product.id),
+            title: result.product.name,
+            subtitle: result.product.serviceArea || '',
+            image: result.product.imageUrl,
+            link: `/services/${result.product.id}`,
+          }).catch(() => undefined);
+
+          if (result.product.categoryId) {
+            setRelatedLoading(true);
+            getServiceListingsByCategory(Number(result.product.categoryId))
+              .then(list => {
+                if (!mounted) {
+                  return;
+                }
+                const nextRelated = list
+                  .filter(item => String(item.id) !== String(result.product.id))
+                  .slice(0, 4);
+                setRelatedServices(nextRelated);
+              })
+              .catch(() => {
+                if (mounted) {
+                  setRelatedServices([]);
+                }
+              })
+              .finally(() => {
+                if (mounted) {
+                  setRelatedLoading(false);
+                }
+              });
+          } else {
+            setRelatedServices([]);
+          }
         }
       } catch (_error) {
         if (mounted) {
@@ -88,6 +154,20 @@ const ServiceDetails: React.FC<ServiceDetailsScreenProps> = ({
   }, [product.id]);
 
   const requestService = async () => {
+    if (requesting || !serviceDetail.inStock) {
+      return;
+    }
+
+    if (!isCustomer) {
+      setError('Only customer accounts can request this service.');
+      return;
+    }
+
+    if (!requesterName.trim() || !requesterPhone.trim()) {
+      setError('Name and phone are required.');
+      return;
+    }
+
     if (!message.trim()) {
       setError('Please add a short message for the technician.');
       return;
@@ -100,17 +180,84 @@ const ServiceDetails: React.FC<ServiceDetailsScreenProps> = ({
 
       await createServiceRequest({
         serviceListingId: serviceDetail.id,
-        requesterName: user?.name || 'Customer',
-        requesterPhone: user?.phone || '',
-        requesterEmail: user?.email || '',
+        requesterName: requesterName.trim(),
+        requesterPhone: requesterPhone.trim(),
+        requesterEmail: requesterEmail.trim(),
         message: message.trim(),
       });
 
-      setSuccess('Request sent successfully.');
+      setMessage('');
+      setSuccess('Service request submitted successfully.');
     } catch (requestError: any) {
       setError(requestError?.message || 'Unable to send your request.');
     } finally {
       setRequesting(false);
+    }
+  };
+
+  const onToggleSaved = async () => {
+    const nextState = await toggleSavedPreference('service', {
+      type: 'service',
+      id: String(serviceDetail.id),
+      title: serviceDetail.name,
+      subtitle: serviceDetail.serviceArea || '',
+      image: serviceDetail.imageUrl,
+      link: `/services/${serviceDetail.id}`,
+    });
+
+    setSaved(nextState);
+  };
+
+  const onShareService = async () => {
+    await Share.share({
+      message: `Check this service: ${serviceDetail.name}`,
+      title: serviceDetail.name,
+    });
+  };
+
+  const onCallTechnician = async () => {
+    const digits = String(serviceDetail.sellerPhone || '').replace(/\D/g, '');
+    if (!digits) {
+      setError('Technician contact is not available.');
+      return;
+    }
+
+    await Linking.openURL(`tel:${digits}`);
+  };
+
+  const onWhatsappTechnician = async () => {
+    const digits = String(serviceDetail.sellerPhone || '').replace(/\D/g, '');
+    if (!digits) {
+      setError('Technician contact is not available.');
+      return;
+    }
+
+    await Linking.openURL(`https://wa.me/${digits}`);
+  };
+
+  const onSubmitReview = async () => {
+    try {
+      setSubmittingReview(true);
+      setError('');
+
+      await createServiceListingReview(serviceDetail.id, {
+        rating: reviewRating,
+        comment: reviewComment.trim() || null,
+      });
+
+      setReviewLoading(true);
+      const [nextReviews, detail] = await Promise.all([
+        getServiceListingReviews(serviceDetail.id).catch(() => []),
+        getServiceListingDetail(serviceDetail.id),
+      ]);
+      setReviews(nextReviews);
+      setServiceDetail(detail.product);
+      setReviewComment('');
+    } catch {
+      setError('Unable to submit review right now.');
+    } finally {
+      setSubmittingReview(false);
+      setReviewLoading(false);
     }
   };
 
@@ -131,20 +278,139 @@ const ServiceDetails: React.FC<ServiceDetailsScreenProps> = ({
           sliderBoxStyle={styles.sliderWrapper}
         />
         <ProductInfo product={serviceDetail} />
-        <View style={styles.formCard}>
-          <Input
-            placeholder="Tell the technician what help you need"
-            value={message}
-            onChangeText={setMessage}
+
+        <View style={styles.actionRow}>
+          <TouchableOpacity onPress={onToggleSaved} style={styles.actionButtonPrimary}>
+            <Text style={styles.actionPrimaryText}>{saved ? 'Saved' : 'Save'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={onShareService} style={styles.actionButtonSecondary}>
+            <Text style={styles.actionSecondaryText}>Share</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={onCallTechnician} style={styles.actionButtonSecondary}>
+            <Text style={styles.actionSecondaryText}>Call</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={onWhatsappTechnician} style={styles.actionButtonSecondary}>
+            <Text style={styles.actionSecondaryText}>WhatsApp</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Request This Service</Text>
+          {isCustomer ? (
+            <>
+              <TextInput
+                style={styles.textInput}
+                value={requesterName}
+                onChangeText={setRequesterName}
+                placeholder="Your name"
+              />
+              <TextInput
+                style={styles.textInput}
+                value={requesterPhone}
+                onChangeText={setRequesterPhone}
+                placeholder="Your phone"
+              />
+              <TextInput
+                style={styles.textInput}
+                value={requesterEmail}
+                onChangeText={setRequesterEmail}
+                placeholder="Your email (optional)"
+              />
+              <TextInput
+                style={[styles.textInput, styles.textArea]}
+                value={message}
+                onChangeText={setMessage}
+                placeholder="Describe your service need"
+                multiline
+              />
+            </>
+          ) : (
+            <Text style={styles.noteText}>
+              Only customer accounts can submit service requests.
+            </Text>
+          )}
+        </View>
+
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Ratings & Reviews</Text>
+          <View style={styles.ratingRow}>
+            {[5, 4, 3, 2, 1].map(star => (
+              <TouchableOpacity
+                key={star}
+                onPress={() => setReviewRating(star)}
+                style={[styles.ratingChip, reviewRating === star && styles.ratingChipActive]}>
+                <Text
+                  style={[
+                    styles.ratingChipText,
+                    reviewRating === star && styles.ratingChipTextActive,
+                  ]}>
+                  {star}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <TextInput
+            style={[styles.textInput, styles.textArea]}
+            value={reviewComment}
+            onChangeText={setReviewComment}
+            placeholder="Write a short review (optional)"
+            multiline
           />
+          <Pressable
+            style={styles.submitReviewButton}
+            onPress={onSubmitReview}
+            disabled={submittingReview}>
+            <Text style={styles.submitReviewText}>
+              {submittingReview ? 'Submitting...' : 'Submit Review'}
+            </Text>
+          </Pressable>
+          {reviewLoading ? <ActivityIndicator color={COLORS.primary} style={styles.reviewLoader} /> : null}
+          {reviews.length === 0 ? (
+            <Text style={styles.noteText}>No reviews yet.</Text>
+          ) : (
+            reviews.slice(0, 5).map(item => (
+              <View key={String(item.id)} style={styles.reviewCard}>
+                <Text style={styles.reviewMeta}>
+                  {item.reviewer?.name || 'User'} - {item.rating}/5
+                </Text>
+                <Text style={styles.reviewComment}>{item.comment || 'No comment'}</Text>
+              </View>
+            ))
+          )}
+        </View>
+
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Related Services</Text>
+          {relatedLoading ? (
+            <ActivityIndicator color={COLORS.primary} style={styles.reviewLoader} />
+          ) : relatedServices.length === 0 ? (
+            <Text style={styles.noteText}>No related services found.</Text>
+          ) : (
+            relatedServices.map(item => (
+              <TouchableOpacity
+                key={String(item.id)}
+                style={styles.relatedItem}
+                onPress={() => navigation.push('ServiceDetails', {product: item})}>
+                <Text style={styles.relatedTitle}>{item.name}</Text>
+                <Text style={styles.relatedMeta}>
+                  {item.serviceArea || 'Area not specified'} - {item.sellerName || 'Unknown'}
+                </Text>
+              </TouchableOpacity>
+            ))
+          )}
         </View>
       </ScrollView>
       <View style={[styles.row, styles.spacing]}>
         <CheckoutButton
-          label={requesting ? 'Sending...' : 'Request Service'}
+          label={
+            requesting
+              ? 'Submitting...'
+              : isCustomer
+              ? 'Send Request'
+              : 'Service Unavailable'
+          }
           style={styles.requestButton}
           onPress={requestService}
-          disabled={requesting}
         />
       </View>
     </View>
@@ -206,6 +472,147 @@ const styles = StyleSheet.create({
   formCard: {
     paddingHorizontal: normalize(16),
     marginTop: normalize(6),
+  },
+  actionRow: {
+    marginHorizontal: normalize(16),
+    marginTop: normalize(8),
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: normalize(8),
+  },
+  actionButtonPrimary: {
+    borderRadius: normalize(16),
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: normalize(14),
+    paddingVertical: normalize(6),
+  },
+  actionPrimaryText: {
+    color: COLORS.white,
+    fontFamily: FONTS.medium,
+    fontSize: FONT_SIZES.XSMALL,
+  },
+  actionButtonSecondary: {
+    borderRadius: normalize(16),
+    borderWidth: 1,
+    borderColor: COLORS.lightGrey,
+    paddingHorizontal: normalize(14),
+    paddingVertical: normalize(6),
+  },
+  actionSecondaryText: {
+    color: COLORS.darkText,
+    fontFamily: FONTS.medium,
+    fontSize: FONT_SIZES.XSMALL,
+  },
+  sectionCard: {
+    marginTop: normalize(12),
+    marginHorizontal: normalize(16),
+    borderWidth: 1,
+    borderColor: COLORS.lightGrey,
+    borderRadius: normalize(12),
+    padding: normalize(12),
+  },
+  sectionTitle: {
+    color: COLORS.darkText,
+    fontFamily: FONTS.medium,
+    fontSize: FONT_SIZES.REGULAR,
+    marginBottom: normalize(10),
+  },
+  textInput: {
+    borderWidth: 1,
+    borderColor: COLORS.lightGrey,
+    borderRadius: normalize(10),
+    paddingHorizontal: normalize(12),
+    paddingVertical: normalize(8),
+    color: COLORS.darkText,
+    fontFamily: FONTS.regular,
+    fontSize: FONT_SIZES.SMALL,
+    marginBottom: normalize(8),
+  },
+  textArea: {
+    minHeight: normalize(80),
+    textAlignVertical: 'top',
+  },
+  noteText: {
+    color: COLORS.grey,
+    fontFamily: FONTS.regular,
+    fontSize: FONT_SIZES.SMALL,
+  },
+  ratingRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: normalize(8),
+    marginBottom: normalize(8),
+  },
+  ratingChip: {
+    borderWidth: 1,
+    borderColor: COLORS.lightGrey,
+    borderRadius: normalize(14),
+    paddingHorizontal: normalize(10),
+    paddingVertical: normalize(4),
+  },
+  ratingChipActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  ratingChipText: {
+    color: COLORS.darkText,
+    fontFamily: FONTS.medium,
+    fontSize: FONT_SIZES.XSMALL,
+  },
+  ratingChipTextActive: {
+    color: COLORS.white,
+  },
+  submitReviewButton: {
+    alignSelf: 'flex-end',
+    backgroundColor: COLORS.primary,
+    borderRadius: normalize(18),
+    paddingHorizontal: normalize(12),
+    paddingVertical: normalize(7),
+    marginBottom: normalize(8),
+  },
+  submitReviewText: {
+    color: COLORS.white,
+    fontFamily: FONTS.medium,
+    fontSize: FONT_SIZES.XSMALL,
+  },
+  reviewLoader: {
+    marginVertical: normalize(8),
+  },
+  reviewCard: {
+    borderWidth: 1,
+    borderColor: COLORS.lightGrey,
+    borderRadius: normalize(10),
+    padding: normalize(8),
+    marginBottom: normalize(8),
+  },
+  reviewMeta: {
+    color: COLORS.darkText,
+    fontFamily: FONTS.medium,
+    fontSize: FONT_SIZES.XSMALL,
+    marginBottom: normalize(2),
+  },
+  reviewComment: {
+    color: COLORS.grey,
+    fontFamily: FONTS.regular,
+    fontSize: FONT_SIZES.XSMALL,
+  },
+  relatedItem: {
+    borderWidth: 1,
+    borderColor: COLORS.lightGrey,
+    borderRadius: normalize(10),
+    padding: normalize(8),
+    marginBottom: normalize(8),
+  },
+  relatedTitle: {
+    color: COLORS.darkText,
+    fontFamily: FONTS.medium,
+    fontSize: FONT_SIZES.SMALL,
+  },
+  relatedMeta: {
+    color: COLORS.grey,
+    fontFamily: FONTS.regular,
+    fontSize: FONT_SIZES.XSMALL,
+    marginTop: normalize(2),
   },
   success: {
     color: COLORS.primary,

@@ -10,4 +10,6 @@ export interface Order {
   requesterPhone?: string;
   requesterEmail?: string;
   message?: string;
+  rawStatus?: string;
+  emailDeliveryStatus?: string;
 }

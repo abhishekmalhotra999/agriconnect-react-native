@@ -93,10 +93,8 @@ type CustomerRootStackParamList = {
   };
   HOME_TAB: undefined;
   Learn: undefined;
-  Blogs: undefined;
-  BLOGS_TAB: undefined;
-  Chats: undefined;
-  CHATS_TAB: undefined;
+  SERVICES_TAB: undefined;
+  REQUESTS_TAB: undefined;
   SELLER_TAB: undefined;
   Products: undefined;
   ProductDetails: {product: Product};
@@ -128,6 +126,20 @@ type ProductStackParamList = {
   ServiceDetails: {product: Product};
   MyServiceRequests: undefined;
   ServiceRequestDetails: {order: Order};
+};
+
+type ServicesStackParamList = {
+  Services: undefined;
+  ServiceDetails: {product: Product};
+  MyServiceRequests: undefined;
+  ServiceRequestDetails: {order: Order};
+};
+
+type RequestsStackParamList = {
+  MyServiceRequests: undefined;
+  ServiceRequestDetails: {order: Order};
+  Services: undefined;
+  ServiceDetails: {product: Product};
 };
 
 type VendorRootStackParamList = {
@@ -194,6 +206,8 @@ const HeaderStack = createStackNavigator<HeaderStackParamList>();
 const ChatStack = createStackNavigator<ChatStackParamList>();
 const LearnStack = createStackNavigator<LearnStackParamList>();
 const ProductsStack = createStackNavigator<ProductStackParamList>();
+const ServicesStack = createStackNavigator<ServicesStackParamList>();
+const RequestsStack = createStackNavigator<RequestsStackParamList>();
 const BlogStack = createStackNavigator<BlogStackParamList>();
 
 const VendorTab = createBottomTabNavigator<VendorRootStackParamList>();
@@ -334,6 +348,50 @@ const ProductsStackNavigation = () => {
       />
       <HeaderStack.Screen name="Profile" component={ProfileStackNavigation} />
     </ProductsStack.Navigator>
+  );
+};
+
+const ServicesStackNavigation = () => {
+  return (
+    <ServicesStack.Navigator screenOptions={{headerShown: false, ...transitionX}}>
+      <ServicesStack.Screen name="Services" component={Services} />
+      <ServicesStack.Screen name="ServiceDetails" component={ServiceDetails} />
+      <ServicesStack.Screen
+        name="MyServiceRequests"
+        component={MyServiceRequests}
+      />
+      <ServicesStack.Screen
+        name="ServiceRequestDetails"
+        component={ServiceRequestDetails}
+      />
+      <HeaderStack.Screen
+        name="InAppNotifications"
+        component={InAppNotifications}
+      />
+      <HeaderStack.Screen name="Profile" component={ProfileStackNavigation} />
+    </ServicesStack.Navigator>
+  );
+};
+
+const RequestsStackNavigation = () => {
+  return (
+    <RequestsStack.Navigator screenOptions={{headerShown: false, ...transitionX}}>
+      <RequestsStack.Screen
+        name="MyServiceRequests"
+        component={MyServiceRequests}
+      />
+      <RequestsStack.Screen
+        name="ServiceRequestDetails"
+        component={ServiceRequestDetails}
+      />
+      <RequestsStack.Screen name="Services" component={Services} />
+      <RequestsStack.Screen name="ServiceDetails" component={ServiceDetails} />
+      <HeaderStack.Screen
+        name="InAppNotifications"
+        component={InAppNotifications}
+      />
+      <HeaderStack.Screen name="Profile" component={ProfileStackNavigation} />
+    </RequestsStack.Navigator>
   );
 };
 
@@ -678,72 +736,87 @@ const BottomTabNavigation: React.FC<{
         }}
       />
       <Tab.Screen
-        name="BLOGS_TAB"
-        component={showSellerTab ? ProductsStackNavigation : ComingSoon}
+        name="SERVICES_TAB"
+        component={ServicesStackNavigation}
         listeners={({navigation}) => ({
           tabPress: e => {
             const isAlreadyFocused = navigation.isFocused();
             if (isAlreadyFocused) {
-              scrollToTop('BLOGS_TAB');
+              scrollToTop('Services');
             }
           },
         })}
-        options={{
-          headerShown: false,
-          tabBarLabel: ({focused}) => (
-            <>
-              <Text
-                style={[
-                  styles.label,
-                  {
-                    color: focused ? COLORS.primary : COLORS.grey,
-                  },
-                ]}>
-                {showSellerTab ? 'Marketplace' : "What's New"}
-              </Text>
-            </>
-          ),
-          tabBarIcon: ({focused}) => (
-            <Image
-              source={focused ? blogsIconActive : blogsIcon}
-              style={styles.icon}
-            />
-          ),
+        options={({route}) => {
+          const routeName = getFocusedRouteNameFromRoute(route) ?? 'Services';
+          return {
+            headerShown: false,
+            tabBarLabel: ({focused}) => (
+              <>
+                <Text
+                  style={[
+                    styles.label,
+                    {
+                      color: focused ? COLORS.primary : COLORS.grey,
+                    },
+                  ]}>
+                  Services
+                </Text>
+              </>
+            ),
+            tabBarIcon: ({focused}) => (
+              <Image
+                source={focused ? blogsIconActive : blogsIcon}
+                style={styles.icon}
+              />
+            ),
+            tabBarStyle: ['ServiceDetails', 'ServiceRequestDetails', 'Profile', 'MyAccount'].includes(
+              routeName,
+            )
+              ? {display: 'none'}
+              : styles.tabBarStyle,
+          };
         }}
       />
       <Tab.Screen
-        name="CHATS_TAB"
-        // component={ChatStackNavigation}
-        component={ComingSoon}
+        name="REQUESTS_TAB"
+        component={RequestsStackNavigation}
         listeners={({navigation}) => ({
           tabPress: e => {
             const isAlreadyFocused = navigation.isFocused();
             if (isAlreadyFocused) {
-              scrollToTop('CHATS_TAB');
+              scrollToTop('MyServiceRequests');
             }
           },
         })}
-        options={{
-          headerShown: false,
-          tabBarLabel: ({focused}) => (
-            <>
-              <Text
-                style={[
-                  styles.label,
-                  {
-                    color: focused ? COLORS.primary : COLORS.grey,
-                  },
-                ]}>
-                Messages
-              </Text>
-            </>
-          ),
-          tabBarIcon: ({focused}) => (
-            <Image
-              source={focused ? chatsIconActive : chatsIcon}
-              style={[styles.icon, styles.resizeIcon]}
-            />
-          ),
+        options={({route}) => {
+          const routeName = getFocusedRouteNameFromRoute(route) ?? 'MyServiceRequests';
+          return {
+            headerShown: false,
+            tabBarLabel: ({focused}) => (
+              <>
+                <Text
+                  style={[
+                    styles.label,
+                    {
+                      color: focused ? COLORS.primary : COLORS.grey,
+                    },
+                  ]}>
+                  Requests
+                </Text>
+              </>
+            ),
+            tabBarIcon: ({focused}) => (
+              <Image
+                source={focused ? chatsIconActive : chatsIcon}
+                style={[styles.icon, styles.resizeIcon]}
+              />
+            ),
+            tabBarStyle: ['ServiceDetails', 'ServiceRequestDetails', 'Profile', 'MyAccount'].includes(
+              routeName,
+            )
+              ? {display: 'none'}
+              : styles.tabBarStyle,
+          };
         }}
       />
       {showSellerTab ? (

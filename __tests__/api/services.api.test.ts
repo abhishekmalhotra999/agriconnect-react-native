@@ -1,8 +1,11 @@
 import {
+  createServiceListingReview,
   createServiceListing,
   createServiceRequest,
+  getServiceCategories,
   getMyServiceRequests,
   getServiceListingDetail,
+  getServiceListingReviews,
   getMyServiceListings,
   getServiceRequestsForTechnician,
   getServiceListings,
@@ -86,6 +89,47 @@ describe('services.api', () => {
     });
   });
 
+  it('loads service categories for filters', async () => {
+    mockedClient.get.mockResolvedValueOnce({
+      data: [
+        {id: 2, name: 'Irrigation'},
+        {id: 3, name: 'Repair'},
+      ],
+    });
+
+    const result = await getServiceCategories();
+
+    expect(mockedClient.get).toHaveBeenCalledWith('/api/services/categories');
+    expect(result).toEqual([
+      {id: 2, name: 'Irrigation'},
+      {id: 3, name: 'Repair'},
+    ]);
+  });
+
+  it('applies local search fallback after listing fetch', async () => {
+    mockedClient.get.mockResolvedValueOnce({
+      data: [
+        {
+          id: 1,
+          title: 'General Farm Checkup',
+          description: 'Technician visit for diagnostics',
+          is_active: true,
+        },
+        {
+          id: 2,
+          title: 'Pump Repair',
+          description: 'Fix irrigation pumps',
+          is_active: true,
+        },
+      ],
+    });
+
+    const result = await getServiceListings({search: 'pump'});
+
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe('Pump Repair');
+  });
+
   it('maps service listing detail gallery URLs', async () => {
     mockedClient.get.mockResolvedValueOnce({
       data: {
@@ -106,6 +150,35 @@ describe('services.api', () => {
       {uri: 'http://localhost:3000/uploads/b.png'},
     ]);
     expect(result.technicianName).toBe('Tech 1');
+  });
+
+  it('loads and maps service listing reviews', async () => {
+    mockedClient.get.mockResolvedValueOnce({
+      data: [
+        {id: 1, rating: 5, comment: 'Great service', reviewer: {id: 9, name: 'Asha'}},
+      ],
+    });
+
+    const result = await getServiceListingReviews(10);
+
+    expect(mockedClient.get).toHaveBeenCalledWith('/api/services/listings/10/reviews');
+    expect(result).toEqual([
+      {id: 1, rating: 5, comment: 'Great service', reviewer: {id: 9, name: 'Asha'}},
+    ]);
+  });
+
+  it('posts service listing review payload', async () => {
+    mockedClient.post.mockResolvedValueOnce({data: {id: 2}});
+
+    await createServiceListingReview(10, {
+      rating: 4,
+      comment: 'Helpful',
+    });
+
+    expect(mockedClient.post).toHaveBeenCalledWith('/api/services/listings/10/reviews', {
+      rating: 4,
+      comment: 'Helpful',
+    });
   });
 
   it('maps technician requests to Order cards with readable statuses', async () => {
@@ -161,14 +234,15 @@ describe('services.api', () => {
       mainPictureUrl: '',
     });
 
-    expect(mockedClient.post).toHaveBeenCalledWith('/api/services/listings', {
-      title: 'Soil Checkup',
-      description: 'Comprehensive soil analysis',
-      service_area: 'Rural Zone A',
-      contact_email: 'tech@example.com',
-      is_active: false,
-      main_picture_url: undefined,
-    });
+    expect(mockedClient.post).toHaveBeenCalledWith(
+      '/api/services/listings',
+      expect.any(FormData),
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      },
+    );
   });
 
   it('posts service request payload in backend contract shape', async () => {
@@ -222,7 +296,28 @@ describe('services.api', () => {
       createdAt: '2025-02-10',
       requesterName: 'Anita',
       requesterPhone: '9111111111',
+      emailDeliveryStatus: undefined,
     });
+  });
+
+  it('maps email delivery status when available', async () => {
+    mockedClient.get.mockResolvedValueOnce({
+      data: [
+        {
+          id: 80,
+          status: 'new',
+          email_delivery_status: 'sent',
+          created_at: '2025-03-01T10:00:00.000Z',
+          requester_name: 'Vani',
+          requester_phone: '9555555555',
+          listing: {title: 'Crop Advisory'},
+        },
+      ],
+    });
+
+    const result = await getMyServiceRequests();
+    expect(result[0].emailDeliveryStatus).toBe('sent');
+    expect(result[0].rawStatus).toBe('new');
   });
 
   it('normalizes request statuses for accepted/cancelled/fallback cases', async () => {
@@ -281,13 +376,14 @@ describe('services.api', () => {
       mainPictureUrl: 'https://cdn.example.com/service.png',
     });
 
-    expect(mockedClient.put).toHaveBeenCalledWith('/api/services/listings/55', {
-      title: 'Updated Listing',
-      description: 'updated',
-      service_area: '',
-      contact_email: '',
-      is_active: true,
-      main_picture_url: 'https://cdn.example.com/service.png',
-    });
+    expect(mockedClient.put).toHaveBeenCalledWith(
+      '/api/services/listings/55',
+      expect.any(FormData),
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      },
+    );
   });
 });

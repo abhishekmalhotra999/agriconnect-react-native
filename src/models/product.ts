@@ -18,4 +18,6 @@ export interface Product {
   ratingCount: number;
   sellerName?: string;
   sellerPhone?: string;
+  serviceArea?: string;
+  contactEmail?: string;
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, ScrollView, Image } from 'react-native';
+import {StyleSheet, View, ScrollView, Image, Text} from 'react-native';
 import { OrderDetailsScreenProps } from '../../../navigation/types';
 import Header from '../../../containers/header';
 import { normalize } from '../../../utils/util';
@@ -9,6 +9,7 @@ import Card from '../../../components/UI/Card';
 import OrderInfo from '../../../components/Vendor/Order/OrderInfo';
 import FastImage from '@d11/react-native-fast-image';
 import Separator from '../../../components/UI/Separator';
+import Item from '../../../components/UI/Item';
 
 const OrderDetails: React.FC<OrderDetailsScreenProps> = ({ route }) => {
   const { order }: { order: Order } = route.params;
@@ -27,6 +28,15 @@ const OrderDetails: React.FC<OrderDetailsScreenProps> = ({ route }) => {
             resizeMode={FastImage.resizeMode.cover}
           />
           <OrderInfo order={order}/>
+          <View style={styles.extraSection}>
+            <Text style={styles.extraTitle}>Request Details</Text>
+            <Item label="requester" value={order.requesterName || '-'} />
+            <Item label="phone" value={order.requesterPhone || '-'} />
+            <Item label="email" value={order.requesterEmail || '-'} />
+            <Item label="message" value={order.message || '-'} />
+            <Item label="email delivery" value={order.emailDeliveryStatus || 'unknown'} />
+            <Item label="raw status" value={order.rawStatus || '-'} />
+          </View>
         </Card>
         <Separator/>
       </ScrollView>
@@ -53,6 +63,14 @@ const styles = StyleSheet.create({
   },
   separator: {
     paddingRight: normalize(10),
+  },
+  extraSection: {
+    marginTop: normalize(10),
+  },
+  extraTitle: {
+    color: COLORS.darkText,
+    fontSize: normalize(12),
+    marginBottom: normalize(6),
   },
 });
 

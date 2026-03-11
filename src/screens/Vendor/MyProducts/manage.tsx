@@ -1,4 +1,4 @@
-import React, {useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {
   Image,
   ScrollView,
@@ -22,6 +22,8 @@ import {
 } from '../../../api/marketplace.api';
 import {
   createServiceListing,
+  getServiceCategories,
+  ServiceCategoryOption,
   updateServiceListing,
 } from '../../../api/services.api';
 import {userContext} from '../../../contexts/UserContext';
@@ -93,6 +95,14 @@ const ManageMyProduct: React.FC<ManageMyProductScreenProps> = ({
   const [status, setStatus] = useState<'draft' | 'published'>(
     product?.status === 'published' ? 'published' : 'draft',
   );
+  const [serviceCategories, setServiceCategories] = useState<ServiceCategoryOption[]>([]);
+  const [serviceCategoryId, setServiceCategoryId] = useState(
+    product?.categoryId ? String(product.categoryId) : '',
+  );
+  const [serviceArea, setServiceArea] = useState(product?.serviceArea || '');
+  const [contactEmail, setContactEmail] = useState(
+    product?.contactEmail || user?.email || '',
+  );
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -103,13 +113,38 @@ const ManageMyProduct: React.FC<ManageMyProductScreenProps> = ({
     return isEdit ? 'Edit Product' : 'Create Product';
   }, [isEdit, isTechnician]);
 
+  useEffect(() => {
+    let mounted = true;
+
+    if (!isTechnician) {
+      return;
+    }
+
+    getServiceCategories()
+      .then(rows => {
+        if (!mounted) {
+          return;
+        }
+        setServiceCategories(rows);
+      })
+      .catch(() => {
+        if (mounted) {
+          setServiceCategories([]);
+        }
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [isTechnician]);
+
   const submitProduct = async (status: 'draft' | 'published') => {
     if (!title.trim()) {
       setError('Title is required.');
       return;
     }
 
-    if (status === 'published' && !thumbnailImage?.uri) {
+    if (!isTechnician && status === 'published' && !thumbnailImage?.uri) {
       setError('Thumbnail image is required before publishing.');
       return;
     }
@@ -130,13 +165,20 @@ const ManageMyProduct: React.FC<ManageMyProductScreenProps> = ({
       };
 
       if (isTechnician) {
+        const thumbnailUri = String(thumbnailImage?.uri || '');
+        const remoteThumbnail =
+          thumbnailUri.startsWith('http://') || thumbnailUri.startsWith('https://');
+
         const servicePayload = {
           title: title.trim(),
           description: description.trim(),
-          serviceArea: '',
-          contactEmail: '',
+          serviceCategoryId: serviceCategoryId ? Number(serviceCategoryId) : undefined,
+          serviceArea: serviceArea.trim(),
+          contactEmail: contactEmail.trim(),
           isActive: status === 'published',
-          mainPictureUrl: thumbnailImage?.uri || '',
+          mainPictureUrl: remoteThumbnail ? thumbnailUri : undefined,
+          mainPictureFile: !remoteThumbnail ? thumbnailImage || undefined : undefined,
+          galleryFiles: galleryImages,
         };
 
         if (isEdit && product?.id) {
@@ -227,11 +269,15 @@ const ManageMyProduct: React.FC<ManageMyProductScreenProps> = ({
         <Card style={styles.formCard}>
           <Text style={styles.pageHeading}>{pageTitle}</Text>
           <Text style={styles.pageSubHeading}>
-            Upload your product images and complete details below.
+            {isTechnician
+              ? 'Create and manage your service listing details.'
+              : 'Upload your product images and complete details below.'}
           </Text>
 
           <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionTitle}>Product Media</Text>
+            <Text style={styles.sectionTitle}>
+              {isTechnician ? 'Service Media' : 'Product Media'}
+            </Text>
           </View>
 
           <Text style={styles.fieldLabel}>Thumbnail Image</Text>
@@ -280,13 +326,56 @@ const ManageMyProduct: React.FC<ManageMyProductScreenProps> = ({
             <Text style={styles.sectionTitle}>Basic Details</Text>
           </View>
 
-          <Text style={styles.fieldLabel}>Product Title</Text>
+          <Text style={styles.fieldLabel}>{isTechnician ? 'Service Title' : 'Product Title'}</Text>
           <Input
-            placeholder="Enter product title"
+            placeholder={isTechnician ? 'Enter service title' : 'Enter product title'}
             value={title}
             onChangeText={setTitle}
             inputStyle={styles.fieldInput}
           />
+
+          {isTechnician ? (
+            <>
+              <Text style={styles.fieldLabel}>Service Category</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <View style={styles.categoryRow}>
+                  {serviceCategories.map(item => {
+                    const active = String(item.id) === String(serviceCategoryId);
+                    return (
+                      <TouchableOpacity
+                        key={String(item.id)}
+                        onPress={() => setServiceCategoryId(String(item.id))}
+                        style={[styles.categoryChip, active && styles.categoryChipActive]}>
+                        <Text
+                          style={[
+                            styles.categoryChipText,
+                            active && styles.categoryChipTextActive,
+                          ]}>
+                          {item.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </ScrollView>
+
+              <Text style={styles.fieldLabel}>Service Area</Text>
+              <Input
+                placeholder="e.g. Montserrado, Bong"
+                value={serviceArea}
+                onChangeText={setServiceArea}
+                inputStyle={styles.fieldInput}
+              />
+
+              <Text style={styles.fieldLabel}>Contact Email</Text>
+              <Input
+                placeholder="Contact email"
+                value={contactEmail}
+                onChangeText={setContactEmail}
+                inputStyle={styles.fieldInput}
+              />
+            </>
+          ) : null}
 
           <Text style={styles.fieldLabel}>Description</Text>
           <Input
@@ -296,35 +385,39 @@ const ManageMyProduct: React.FC<ManageMyProductScreenProps> = ({
             inputStyle={styles.fieldInput}
           />
 
-          <Text style={styles.fieldLabel}>Price</Text>
-          <Input
-            placeholder="Price (e.g. 100)"
-            keyboardType="numeric"
-            value={unitPrice}
-            onChangeText={value => setUnitPrice(sanitizeDecimalInput(value))}
-            editable={!isTechnician}
-            inputStyle={styles.fieldInput}
-          />
+          {!isTechnician ? (
+            <>
+              <Text style={styles.fieldLabel}>Price</Text>
+              <Input
+                placeholder="Price (e.g. 100)"
+                keyboardType="numeric"
+                value={unitPrice}
+                onChangeText={value => setUnitPrice(sanitizeDecimalInput(value))}
+                editable={!isTechnician}
+                inputStyle={styles.fieldInput}
+              />
 
-          <Text style={styles.fieldLabel}>Sale Price</Text>
-          <Input
-            placeholder="Sale price (e.g. 85)"
-            keyboardType="numeric"
-            value={salePrice}
-            onChangeText={value => setSalePrice(sanitizeDecimalInput(value))}
-            editable={!isTechnician}
-            inputStyle={styles.fieldInput}
-          />
+              <Text style={styles.fieldLabel}>Sale Price</Text>
+              <Input
+                placeholder="Sale price (e.g. 85)"
+                keyboardType="numeric"
+                value={salePrice}
+                onChangeText={value => setSalePrice(sanitizeDecimalInput(value))}
+                editable={!isTechnician}
+                inputStyle={styles.fieldInput}
+              />
 
-          <Text style={styles.fieldLabel}>Stock Quantity</Text>
-          <Input
-            placeholder="Stock quantity"
-            keyboardType="numeric"
-            value={stockQuantity}
-            onChangeText={value => setStockQuantity(sanitizeIntegerInput(value))}
-            editable={!isTechnician}
-            inputStyle={styles.fieldInput}
-          />
+              <Text style={styles.fieldLabel}>Stock Quantity</Text>
+              <Input
+                placeholder="Stock quantity"
+                keyboardType="numeric"
+                value={stockQuantity}
+                onChangeText={value => setStockQuantity(sanitizeIntegerInput(value))}
+                editable={!isTechnician}
+                inputStyle={styles.fieldInput}
+              />
+            </>
+          ) : null}
 
           <Text style={styles.statusText}>Status: {status}</Text>
           {!!error && <ErrorText text={error} />}
@@ -453,6 +546,32 @@ const styles = StyleSheet.create({
   galleryRow: {
     flexDirection: 'row',
     paddingVertical: normalize(6),
+  },
+  categoryRow: {
+    flexDirection: 'row',
+    paddingVertical: normalize(4),
+    marginBottom: normalize(6),
+  },
+  categoryChip: {
+    borderWidth: 1,
+    borderColor: COLORS.lightGrey,
+    borderRadius: normalize(16),
+    paddingHorizontal: normalize(10),
+    paddingVertical: normalize(5),
+    marginRight: normalize(8),
+  },
+  categoryChipActive: {
+    backgroundColor: COLORS.primaryLight,
+    borderColor: COLORS.primary,
+  },
+  categoryChipText: {
+    color: COLORS.grey,
+    fontFamily: FONTS.regular,
+    fontSize: FONT_SIZES.XSMALL,
+  },
+  categoryChipTextActive: {
+    color: COLORS.primary,
+    fontFamily: FONTS.medium,
   },
   emptyGalleryCard: {
     borderWidth: 1,

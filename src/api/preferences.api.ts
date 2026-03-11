@@ -48,8 +48,10 @@ export const saveFarmerOnboarding = async (
   return response.data;
 };
 
+export type PreferenceItemType = 'product' | 'service' | 'course' | string;
+
 type PreferenceItem = {
-  type: 'product' | string;
+  type: PreferenceItemType;
   id: string;
   title?: string;
   subtitle?: string;
@@ -65,17 +67,31 @@ const saveUserPreferences = async (
 };
 
 export const isProductSaved = async (productId: number | string) => {
+  return isPreferenceSaved('product', productId);
+};
+
+export const isPreferenceSaved = async (
+  itemType: PreferenceItemType,
+  itemId: number | string,
+) => {
   const preferences = await getUserPreferences();
-  const targetId = String(productId);
+  const targetId = String(itemId);
   const savedItems = Array.isArray(preferences.savedItems)
     ? preferences.savedItems
     : [];
   return savedItems.some(
-    item => String(item.id) === targetId && String(item.type) === 'product',
+    item => String(item.id) === targetId && String(item.type) === String(itemType),
   );
 };
 
 export const toggleSavedProduct = async (item: PreferenceItem) => {
+  return toggleSavedPreference('product', item);
+};
+
+export const toggleSavedPreference = async (
+  itemType: PreferenceItemType,
+  item: PreferenceItem,
+) => {
   const preferences = await getUserPreferences();
   const savedItems = Array.isArray(preferences.savedItems)
     ? [...preferences.savedItems]
@@ -84,7 +100,8 @@ export const toggleSavedProduct = async (item: PreferenceItem) => {
 
   const existingIndex = savedItems.findIndex(
     savedItem =>
-      String(savedItem.id) === targetId && String(savedItem.type) === 'product',
+      String(savedItem.id) === targetId &&
+      String(savedItem.type) === String(itemType),
   );
 
   let nextSavedItems = savedItems;
@@ -103,6 +120,13 @@ export const toggleSavedProduct = async (item: PreferenceItem) => {
 };
 
 export const trackRecentProduct = async (item: PreferenceItem) => {
+  return trackRecentPreference('product', item);
+};
+
+export const trackRecentPreference = async (
+  itemType: PreferenceItemType,
+  item: PreferenceItem,
+) => {
   const preferences = await getUserPreferences();
   const recentItems = Array.isArray(preferences.recentItems)
     ? [...preferences.recentItems]
@@ -111,7 +135,10 @@ export const trackRecentProduct = async (item: PreferenceItem) => {
 
   const deduped = recentItems.filter(
     recentItem =>
-      !(String(recentItem.id) === targetId && String(recentItem.type) === 'product'),
+      !(
+        String(recentItem.id) === targetId &&
+        String(recentItem.type) === String(itemType)
+      ),
   );
 
   const nextRecentItems = [item, ...deduped].slice(0, 30);

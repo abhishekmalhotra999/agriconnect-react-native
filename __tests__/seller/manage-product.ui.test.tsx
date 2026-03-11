@@ -5,7 +5,13 @@ import {
   createMarketplaceProduct,
   updateMarketplaceProduct,
 } from '../../src/api/marketplace.api';
+import {
+  createServiceListing,
+  getServiceCategories,
+  updateServiceListing,
+} from '../../src/api/services.api';
 import {userContext} from '../../src/contexts/UserContext';
+import {launchImageLibrary} from 'react-native-image-picker';
 
 jest.mock('../../src/utils/util', () => ({
   normalize: (value: number) => value,
@@ -29,6 +35,7 @@ jest.mock('../../src/api/marketplace.api', () => ({
 
 jest.mock('../../src/api/services.api', () => ({
   createServiceListing: jest.fn(),
+  getServiceCategories: jest.fn(),
   updateServiceListing: jest.fn(),
 }));
 
@@ -134,6 +141,147 @@ describe('manage product UI', () => {
           unitPrice: 20,
           stockQuantity: 5,
           status: 'draft',
+        }),
+      );
+      expect(goBack).toHaveBeenCalled();
+    });
+  });
+
+  it('creates published technician service with local thumbnail file payload', async () => {
+    (userContext as unknown as jest.Mock).mockReturnValue({
+      user: {
+        accountType: 'technician',
+        email: 'tech@acme.com',
+        profile: {professionType: 'technician'},
+      },
+    });
+    (getServiceCategories as jest.Mock).mockResolvedValueOnce([
+      {id: 4, name: 'Irrigation'},
+      {id: 5, name: 'Repair'},
+    ]);
+    (launchImageLibrary as jest.Mock).mockResolvedValueOnce({
+      assets: [
+        {
+          uri: 'file:///tmp/local-thumbnail.jpg',
+          type: 'image/jpeg',
+          fileName: 'local-thumbnail.jpg',
+        },
+      ],
+      didCancel: false,
+    });
+    (createServiceListing as jest.Mock).mockResolvedValueOnce({});
+
+    const goBack = jest.fn();
+    const screen = render(
+      <ManageMyProduct
+        navigation={{goBack} as any}
+        route={{
+          key: 'ManageMyProduct',
+          name: 'ManageMyProduct',
+          params: {},
+        } as any}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(getServiceCategories).toHaveBeenCalled();
+      expect(screen.getByText('Irrigation')).toBeTruthy();
+    });
+
+    fireEvent.changeText(screen.getByPlaceholderText('Enter service title'), 'Field Pump Fix');
+    fireEvent.changeText(screen.getByPlaceholderText('e.g. Montserrado, Bong'), 'Bong');
+    fireEvent.changeText(screen.getByPlaceholderText('Contact email'), 'dispatch@acme.com');
+    fireEvent.press(screen.getByText('Repair'));
+
+    await act(async () => {
+      fireEvent.press(screen.getByText('Upload Thumbnail'));
+    });
+
+    await act(async () => {
+      fireEvent.press(screen.getByText('Publish'));
+    });
+
+    await waitFor(() => {
+      expect(createServiceListing).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Field Pump Fix',
+          serviceCategoryId: 5,
+          serviceArea: 'Bong',
+          contactEmail: 'dispatch@acme.com',
+          isActive: true,
+          mainPictureUrl: undefined,
+          mainPictureFile: expect.objectContaining({
+            uri: 'file:///tmp/local-thumbnail.jpg',
+          }),
+        }),
+      );
+      expect(goBack).toHaveBeenCalled();
+    });
+  });
+
+  it('updates technician service with remote thumbnail url payload', async () => {
+    (userContext as unknown as jest.Mock).mockReturnValue({
+      user: {
+        accountType: 'technician',
+        email: 'tech@acme.com',
+        profile: {professionType: 'technician'},
+      },
+    });
+    (getServiceCategories as jest.Mock).mockResolvedValueOnce([{id: 2, name: 'Irrigation'}]);
+    (updateServiceListing as jest.Mock).mockResolvedValueOnce({});
+
+    const goBack = jest.fn();
+    const screen = render(
+      <ManageMyProduct
+        navigation={{goBack} as any}
+        route={{
+          key: 'ManageMyProduct',
+          name: 'ManageMyProduct',
+          params: {
+            product: {
+              id: 55,
+              name: 'Existing Service',
+              image: {},
+              imageUrl: 'https://cdn.example.com/service.png',
+              categoryId: 2,
+              category: 'Service',
+              serviceArea: 'Montserrado',
+              contactEmail: 'old@acme.com',
+              status: 'published',
+              price: '0',
+              discountedPrice: '0',
+              stockQuantity: 0,
+              shortDescription: '',
+              description: 'old description',
+              inStock: true,
+              rating: 0,
+              ratingCount: 0,
+            },
+          },
+        } as any}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(getServiceCategories).toHaveBeenCalled();
+    });
+
+    fireEvent.changeText(screen.getByPlaceholderText('Contact email'), 'new@acme.com');
+
+    await act(async () => {
+      fireEvent.press(screen.getByText('Publish'));
+    });
+
+    await waitFor(() => {
+      expect(updateServiceListing).toHaveBeenCalledWith(
+        55,
+        expect.objectContaining({
+          serviceCategoryId: 2,
+          serviceArea: 'Montserrado',
+          contactEmail: 'new@acme.com',
+          isActive: true,
+          mainPictureUrl: 'https://cdn.example.com/service.png',
+          mainPictureFile: undefined,
         }),
       );
       expect(goBack).toHaveBeenCalled();

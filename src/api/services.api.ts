@@ -13,6 +13,7 @@ type ServiceListing = {
   id: number;
   title: string;
   description?: string | null;
+  service_category_id?: number | null;
   service_area?: string | null;
   contact_email?: string | null;
   main_picture_url?: string | null;
@@ -30,10 +31,31 @@ type ServiceListing = {
   };
 };
 
+export type ServiceReview = {
+  id: number;
+  rating: number;
+  comment?: string | null;
+  reviewer?: {
+    id?: number;
+    name?: string | null;
+  } | null;
+};
+
+export type ServiceCategoryOption = {
+  id: number;
+  name: string;
+};
+
+type ServiceListingFilters = {
+  categoryId?: number | null;
+  search?: string;
+};
+
 type ServiceRequest = {
   id: number;
   message: string;
   status: string;
+  email_delivery_status?: string;
   requester_name: string;
   requester_phone: string;
   created_at: string;
@@ -95,11 +117,16 @@ const mapServiceListingToProduct = (item: ServiceListing): Product => {
     image: imageUrl ? {uri: imageUrl} : fallbackImage,
     imageUrl: imageUrl || undefined,
     category: item.category?.name || 'Service',
-    categoryId: item.category?.id || null,
+    categoryId: item.category?.id || item.service_category_id || null,
     status: item.is_active ? 'published' : 'draft',
     inStock: item.is_active !== false,
     rating: Number(item.avgRating || 0),
     ratingCount: Number(item.reviewCount || 0),
+    serviceArea: String(item.service_area || '').trim() || undefined,
+    contactEmail:
+      String(item.contact_email || item.technician?.email || '').trim() || undefined,
+    sellerName: String(item.technician?.name || '').trim() || undefined,
+    sellerPhone: String(item.technician?.phone || '').trim() || undefined,
   };
 };
 
@@ -115,6 +142,8 @@ const mapServiceRequestToOrder = (item: ServiceRequest): Order => {
     accepted: 'Accepted',
     in_progress: 'In Progress',
     completed: 'Completed',
+    resolved: 'Resolved',
+    closed: 'Closed',
     rejected: 'Rejected',
     cancelled: 'Cancelled',
   };
@@ -131,16 +160,30 @@ const mapServiceRequestToOrder = (item: ServiceRequest): Order => {
     requesterPhone: item.requester_phone || '',
     requesterEmail: '',
     message: item.message || '',
+    emailDeliveryStatus: String(item.email_delivery_status || '').trim() || undefined,
+    rawStatus,
   };
 };
 
 type UpsertServiceListingPayload = {
   title: string;
   description?: string;
+  serviceCategoryId?: number | null;
   serviceArea?: string;
   contactEmail?: string;
   isActive: boolean;
   mainPictureUrl?: string;
+  mainPictureFile?: {
+    uri: string;
+    type?: string;
+    fileName?: string;
+  };
+  galleryFiles?: Array<{
+    uri: string;
+    type?: string;
+    fileName?: string;
+  }>;
+  galleryUrls?: string[];
 };
 
 type CreateServiceRequestPayload = {
@@ -152,21 +195,93 @@ type CreateServiceRequestPayload = {
 };
 
 const buildUpsertPayload = (payload: UpsertServiceListingPayload) => {
-  return {
-    title: payload.title,
-    description: payload.description || '',
-    service_area: payload.serviceArea || '',
-    contact_email: payload.contactEmail || '',
-    is_active: payload.isActive,
-    main_picture_url: payload.mainPictureUrl || undefined,
-  };
+  const formData = new FormData();
+
+  formData.append('title', payload.title);
+  formData.append('description', payload.description || '');
+  if (payload.serviceCategoryId !== undefined) {
+    formData.append('service_category_id', String(payload.serviceCategoryId || ''));
+  }
+  formData.append('service_area', payload.serviceArea || '');
+  formData.append('contact_email', payload.contactEmail || '');
+  formData.append('is_active', String(payload.isActive));
+
+  if (payload.mainPictureUrl) {
+    formData.append('main_picture_url', payload.mainPictureUrl);
+  }
+
+  if (payload.mainPictureFile?.uri) {
+    formData.append('main_picture_file', {
+      uri: payload.mainPictureFile.uri,
+      type: payload.mainPictureFile.type || 'image/jpeg',
+      name: payload.mainPictureFile.fileName || 'service-thumbnail.jpg',
+    } as any);
+  }
+
+  if (Array.isArray(payload.galleryUrls)) {
+    formData.append('gallery_urls', JSON.stringify(payload.galleryUrls));
+  }
+
+  if (Array.isArray(payload.galleryFiles)) {
+    payload.galleryFiles.forEach((file, index) => {
+      if (!file?.uri) return;
+      formData.append('gallery_files', {
+        uri: file.uri,
+        type: file.type || 'image/jpeg',
+        name: file.fileName || `service-gallery-${index + 1}.jpg`,
+      } as any);
+    });
+  }
+
+  return formData;
 };
 
-export const getServiceListings = () => {
-  return apiClient.get('/api/services/listings').then(response => {
+export const getServiceCategories = () => {
+  return apiClient.get('/api/services/categories').then(response => {
     const rows = Array.isArray(response.data) ? response.data : [];
-    return rows.map(mapServiceListingToProduct);
+    return rows.map((item: any) => ({
+      id: Number(item.id || 0),
+      name: String(item.name || '').trim(),
+    })) as ServiceCategoryOption[];
   });
+};
+
+export const getServiceListings = (filters?: ServiceListingFilters) => {
+  const params: Record<string, any> = {};
+  if (filters?.categoryId) {
+    params.category_id = filters.categoryId;
+  }
+
+  const request = Object.keys(params).length
+    ? apiClient.get('/api/services/listings', {params})
+    : apiClient.get('/api/services/listings');
+
+  return request.then(response => {
+    const rows = Array.isArray(response.data) ? response.data : [];
+    const mapped = rows.map(mapServiceListingToProduct);
+
+    const searchQuery = String(filters?.search || '').trim().toLowerCase();
+    if (!searchQuery) {
+      return mapped;
+    }
+
+    return mapped.filter(item => {
+      const name = String(item.name || '').toLowerCase();
+      const description = String(item.description || item.shortDescription || '').toLowerCase();
+      const category = String(item.category || '').toLowerCase();
+      const serviceArea = String(item.serviceArea || '').toLowerCase();
+      return (
+        name.includes(searchQuery) ||
+        description.includes(searchQuery) ||
+        category.includes(searchQuery) ||
+        serviceArea.includes(searchQuery)
+      );
+    });
+  });
+};
+
+export const getServiceListingsByCategory = (categoryId: number) => {
+  return getServiceListings({categoryId});
 };
 
 export const getMyServiceListings = () => {
@@ -198,12 +313,43 @@ export const getServiceListingDetail = (listingId: number) => {
       .map(uri => ({uri}));
 
     return {
-      product,
+      product: {
+        ...product,
+        serviceArea: String(row.service_area || '').trim() || undefined,
+        contactEmail: String(row.contact_email || row.technician?.email || '').trim() || undefined,
+      },
       images,
       contactEmail: row.contact_email || row.technician?.email || '',
       technicianName: row.technician?.name || '',
     };
   });
+};
+
+export const getServiceListingReviews = (listingId: number) => {
+  return apiClient.get(`/api/services/listings/${listingId}/reviews`).then(response => {
+    const rows = Array.isArray(response.data) ? response.data : [];
+    return rows.map((item: any) => ({
+      id: Number(item.id || 0),
+      rating: Number(item.rating || 0),
+      comment: item.comment || null,
+      reviewer: item.reviewer || null,
+    })) as ServiceReview[];
+  });
+};
+
+export const createServiceListingReview = (
+  listingId: number,
+  payload: {rating: number; comment?: string | null},
+) => {
+  return apiClient
+    .post(`/api/services/listings/${listingId}/reviews`, {
+      rating: payload.rating,
+      comment: payload.comment || null,
+    })
+    .then(response => response.data)
+    .catch(error => {
+      throw new Error(parseApiError(error));
+    });
 };
 
 export const createServiceRequest = (payload: CreateServiceRequestPayload) => {
@@ -230,7 +376,11 @@ export const getMyServiceRequests = () => {
 
 export const createServiceListing = (payload: UpsertServiceListingPayload) => {
   return apiClient
-    .post('/api/services/listings', buildUpsertPayload(payload))
+    .post('/api/services/listings', buildUpsertPayload(payload), {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
     .then(response => mapServiceListingToProduct(response.data as ServiceListing))
     .catch(error => {
       throw new Error(parseApiError(error));
@@ -242,7 +392,11 @@ export const updateServiceListing = (
   payload: UpsertServiceListingPayload,
 ) => {
   return apiClient
-    .put(`/api/services/listings/${listingId}`, buildUpsertPayload(payload))
+    .put(`/api/services/listings/${listingId}`, buildUpsertPayload(payload), {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
     .then(response => mapServiceListingToProduct(response.data as ServiceListing))
     .catch(error => {
       throw new Error(parseApiError(error));

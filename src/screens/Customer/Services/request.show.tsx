@@ -12,6 +12,26 @@ const ServiceRequestDetails: React.FC<ServiceRequestDetailsScreenProps> = ({
   route,
 }) => {
   const {order} = route.params;
+  const rawStatus = String(order.rawStatus || '').toLowerCase();
+
+  const timeline = [
+    {
+      label: 'New',
+      done: ['new', 'pending', 'accepted', 'in_progress', 'completed', 'resolved', 'closed'].includes(rawStatus),
+    },
+    {
+      label: 'In Progress',
+      done: ['in_progress', 'completed', 'resolved', 'closed'].includes(rawStatus),
+    },
+    {
+      label: 'Resolved',
+      done: ['resolved', 'closed', 'completed'].includes(rawStatus),
+    },
+    {
+      label: 'Closed',
+      done: rawStatus === 'closed',
+    },
+  ];
 
   return (
     <View style={styles.container}>
@@ -29,12 +49,26 @@ const ServiceRequestDetails: React.FC<ServiceRequestDetailsScreenProps> = ({
           <Item label="created" value={order.createdAt} />
           <Item label="requester" value={order.requesterName || '-'} />
           <Item label="phone" value={order.requesterPhone || '-'} />
+          <Item label="email" value={order.requesterEmail || '-'} />
+          <Item
+            label="email delivery"
+            value={order.emailDeliveryStatus || 'unknown'}
+          />
           {!!order.message && (
             <View style={styles.messageWrapper}>
               <Text style={styles.messageLabel}>Message</Text>
               <Text style={styles.messageText}>{order.message}</Text>
             </View>
           )}
+          <View style={styles.timelineContainer}>
+            {timeline.map(step => (
+              <View key={step.label} style={[styles.timelineStep, step.done && styles.timelineStepDone]}>
+                <Text style={[styles.timelineText, step.done && styles.timelineTextDone]}>
+                  {step.label}
+                </Text>
+              </View>
+            ))}
+          </View>
         </Card>
       </ScrollView>
     </View>
@@ -74,6 +108,31 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.regular,
     fontSize: FONT_SIZES.REGULAR,
     lineHeight: normalize(20),
+  },
+  timelineContainer: {
+    marginTop: normalize(12),
+    gap: normalize(6),
+  },
+  timelineStep: {
+    borderWidth: 1,
+    borderColor: COLORS.lightGrey,
+    borderRadius: normalize(20),
+    paddingHorizontal: normalize(12),
+    paddingVertical: normalize(6),
+    alignSelf: 'flex-start',
+  },
+  timelineStepDone: {
+    borderColor: COLORS.primary,
+    backgroundColor: `${COLORS.primary}20`,
+  },
+  timelineText: {
+    color: COLORS.grey,
+    fontFamily: FONTS.regular,
+    fontSize: FONT_SIZES.XSMALL,
+  },
+  timelineTextDone: {
+    color: COLORS.primary,
+    fontFamily: FONTS.medium,
   },
 });
 
