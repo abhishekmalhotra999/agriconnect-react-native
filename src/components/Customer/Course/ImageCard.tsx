@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet, ImageProps } from 'react-native';
+import { View, Text, Image, StyleSheet, ImageProps, Pressable } from 'react-native';
 import { FONTS, FONT_SIZES } from '../../../themes/styles';
 import { normalize } from '../../../utils/util';
 
@@ -8,16 +8,18 @@ interface ImageCardProps {
   tag: string;
   themeColor: string;
   textColor: string;
+  isActive?: boolean;
+  onPress?: () => void;
 }
 
-const ImageCard: React.FC<ImageCardProps> = ({ imageSource, tag, themeColor, textColor }) => {
+const ImageCard: React.FC<ImageCardProps> = ({ imageSource, tag, themeColor, textColor, isActive = false, onPress }) => {
   return (
-    <View style={[styles.card, { backgroundColor: themeColor }]}>
+    <Pressable style={[styles.card, { backgroundColor: themeColor }, isActive && styles.cardActive]} onPress={onPress}>
       <Image source={imageSource} style={styles.image} />
       <View style={styles.tagContainer}>
         <Text style={[styles.tag, { color: textColor }]}>{tag}</Text>
       </View>
-    </View>
+    </Pressable>
   );
 };
 
@@ -29,6 +31,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  cardActive: {
+    borderWidth: 2,
+    borderColor: '#E69B00',
   },
   image: {
     flex: 1,

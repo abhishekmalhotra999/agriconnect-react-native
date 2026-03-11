@@ -21,6 +21,7 @@
     "db:mysql:up": "docker compose -f docker-compose.mysql.yml up -d mysql-dev",
     "db:mysql:down": "docker compose -f docker-compose.mysql.yml down",
     "db:copy:pg-to-mysql": "node scripts/migrate_pg_to_mysql.js",
+    "db:seed:lms:bulk:mysql": "set -a && . ./.env.mysql && set +a && node scripts/seed_lms_bulk_courses_mysql.js",
     "test": "NODE_ENV=test jest --runInBand",
     "test:mysql": "set -a && . ./.env.mysql && set +a && DB_DIALECT=mysql NODE_ENV=test jest --runInBand",
     "test:watch": "NODE_ENV=test jest --watch",

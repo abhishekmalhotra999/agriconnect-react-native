@@ -24,6 +24,7 @@ import {greenCheck, listItem2} from '../../../constants/images';
 export default function Lesson({route, navigation}) {
   const [loading, setLoading] = useState(true);
   const [activeSections, setActiveSections] = useState<number[]>([]);
+  const [heroImageFailed, setHeroImageFailed] = useState(false);
   const {id} = route.params;
   const authToken = useAppSelector(state => state.auth.authToken);
   const dispatch = useAppDispatch();
@@ -37,12 +38,12 @@ export default function Lesson({route, navigation}) {
   }, [courses, id]);
 
   const courseHeroSource = useMemo(() => {
-    if (courseDetail?.thumbnailUrl) {
+    if (!heroImageFailed && courseDetail?.thumbnailUrl) {
       return {uri: courseDetail.thumbnailUrl};
     }
 
     return listItem2;
-  }, [courseDetail?.thumbnailUrl]);
+  }, [courseDetail?.thumbnailUrl, heroImageFailed]);
 
   useEffect(() => {
     if (id && authToken) {
@@ -138,7 +139,12 @@ export default function Lesson({route, navigation}) {
       {loading && <ActivityIndicator />}
       {!loading && (
         <ScrollView style={styles.scrollContainer}>
-          <Image source={courseHeroSource} style={styles.image} resizeMode="cover" />
+          <Image
+            source={courseHeroSource}
+            style={styles.image}
+            resizeMode="cover"
+            onError={() => setHeroImageFailed(true)}
+          />
           <View>
             {courseDetail?.description ? (
               <RenderHtml

@@ -30,6 +30,7 @@ const tagsStyles = {
 export default function LessonDetail({route}) {
   const params = route.params;
   const [loading, setLoading] = useState<boolean>(false);
+  const [heroImageFailed, setHeroImageFailed] = useState<boolean>(false);
   const {lessons, completedLessons} = useAppSelector(state => state.learn);
   const dispatch = useAppDispatch();
   const {width} = useWindowDimensions();
@@ -48,16 +49,20 @@ export default function LessonDetail({route}) {
   }, [lessons, lessonId]);
 
   const heroSource = useMemo(() => {
-    if (lessonDetail?.thumbnailUrl) {
+    if (!heroImageFailed && lessonDetail?.thumbnailUrl) {
       return {uri: lessonDetail.thumbnailUrl};
     }
 
-    if (lessonDetail?.asset?.contentType === 'image' && lessonDetail?.asset?.url) {
+    if (
+      !heroImageFailed &&
+      lessonDetail?.asset?.contentType === 'image' &&
+      lessonDetail?.asset?.url
+    ) {
       return {uri: lessonDetail.asset.url};
     }
 
     return listItem3;
-  }, [lessonDetail]);
+  }, [lessonDetail, heroImageFailed]);
 
   const lessonHtml = useMemo(() => {
     const rawContent =
@@ -100,7 +105,12 @@ export default function LessonDetail({route}) {
     <View style={styles.wrapper}>
       <Header title={lessonDetail?.title} goBack icons={false} />
       <ScrollView style={styles.content}>
-        <Image source={heroSource} style={styles.heroImage} resizeMode="cover" />
+        <Image
+          source={heroSource}
+          style={styles.heroImage}
+          resizeMode="cover"
+          onError={() => setHeroImageFailed(true)}
+        />
 
         <View style={styles.control}>
           <Text style={styles.instructorText}>Instructor: {'admin'}</Text>
