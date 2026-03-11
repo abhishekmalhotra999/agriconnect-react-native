@@ -47,7 +47,7 @@ const Courses: React.FC<CoursesScreenProps> = ({navigation}) => {
           </>
         }>
         <Filters
-          title="Choice your courses"
+          title="Choose your courses"
           options={options}
           itemStyle={styles.itemStyle}
           activeFilter={activeFilter}
@@ -67,8 +67,8 @@ const styles = StyleSheet.create({
   imageCardContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: normalize(20),
-    marginBottom: normalize(35),
+    marginTop: normalize(16),
+    marginBottom: normalize(24),
     paddingHorizontal: normalize(16),
   },
   itemStyle: {

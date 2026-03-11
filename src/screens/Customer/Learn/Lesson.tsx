@@ -19,7 +19,7 @@ import {getLesson, getLessonCompletionProgress} from '../../../api/learn.api';
 import learnAction from '../../../store/slices/learn.slice';
 import RenderHtml from 'react-native-render-html';
 import {normalize} from '../../../utils/util';
-import {greenCheck} from '../../../constants/images';
+import {greenCheck, listItem2} from '../../../constants/images';
 
 export default function Lesson({route, navigation}) {
   const [loading, setLoading] = useState(true);
@@ -35,6 +35,14 @@ export default function Lesson({route, navigation}) {
   const courseDetail = useMemo(() => {
     return courses.find(course => course.id === id);
   }, [courses, id]);
+
+  const courseHeroSource = useMemo(() => {
+    if (courseDetail?.thumbnailUrl) {
+      return {uri: courseDetail.thumbnailUrl};
+    }
+
+    return listItem2;
+  }, [courseDetail?.thumbnailUrl]);
 
   useEffect(() => {
     if (id && authToken) {
@@ -130,18 +138,7 @@ export default function Lesson({route, navigation}) {
       {loading && <ActivityIndicator />}
       {!loading && (
         <ScrollView style={styles.scrollContainer}>
-          <Image
-            source={
-              courseDetail?.thumbnailUrl
-                ? {
-                    uri: courseDetail.thumbnailUrl,
-                  }
-                : undefined
-            }
-            style={styles.image}
-            //   resizeMethod="scale"
-            resizeMode="cover"
-          />
+          <Image source={courseHeroSource} style={styles.image} resizeMode="cover" />
           <View>
             {courseDetail?.description ? (
               <RenderHtml
@@ -182,11 +179,16 @@ const styles = StyleSheet.create({
   },
   image: {
     width: Dimensions.get('window').width,
-    height: 280,
-    // flexGrow: 0.5,
+    height: 220,
   },
   accordContainer: {
-    paddingBottom: 4,
+    paddingBottom: 6,
+    borderRadius: 14,
+    marginHorizontal: 12,
+    marginVertical: 6,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+    backgroundColor: COLORS.white,
   },
   containerCount: {
     backgroundColor: COLORS.lightGrey,
@@ -199,14 +201,14 @@ const styles = StyleSheet.create({
   },
   idText: {},
   contentStyle: {
-    backgroundColor: COLORS.lightGrey,
-    padding: 10,
-    borderRadius: 10,
+    backgroundColor: '#fafafa',
+    padding: 12,
+    borderRadius: 12,
     color: COLORS.grey,
+    lineHeight: 20,
   },
   accordHeader: {
     padding: 12,
-    // backgroundColor: '#666',
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -219,8 +221,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   accordTitle: {
-    fontSize: 14,
-    color: COLORS.grey,
+    fontSize: 15,
+    color: COLORS.black,
+    maxWidth: '84%',
   },
   accordBody: {
     padding: 12,

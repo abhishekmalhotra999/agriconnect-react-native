@@ -9,9 +9,9 @@ import {
 } from 'react-native';
 import {Course} from '../../../models/Course';
 import {COLORS, FONTS, FONT_SIZES} from '../../../themes/styles';
-import FastImage from '@d11/react-native-fast-image';
 import {normalize} from '../../../utils/util';
 import {useNavigation} from '@react-navigation/native';
+import {listItem1} from '../../../constants/images';
 
 interface CourseProps {
   item: Course;
@@ -19,6 +19,8 @@ interface CourseProps {
 
 const CourseItem: React.FC<CourseProps> = ({item}) => {
   const navigation = useNavigation();
+  const imageSource = item.thumbnailUrl ? {uri: item.thumbnailUrl} : listItem1;
+
   const courseClickHandler = () => {
     navigation.navigate('Lesson', {id: item.id});
   };
@@ -27,13 +29,12 @@ const CourseItem: React.FC<CourseProps> = ({item}) => {
       style={[styles.courseContainer, styles.card]}
       onPress={courseClickHandler}>
       <Image
-        // @ts-ignore
-        source={item.thumbnailUrl ? {uri: item.thumbnailUrl} : undefined}
+        source={imageSource}
         style={styles.courseImage}
-        resizeMode={FastImage.resizeMode.contain}
+        resizeMode={'cover'}
       />
       <View style={styles.courseDetails}>
-        <Text style={styles.courseTitle} numberOfLines={1} ellipsizeMode="tail">
+        <Text style={styles.courseTitle} numberOfLines={2} ellipsizeMode="tail">
           {item.title}
         </Text>
         <Text style={styles.courseAuthor}>{item.instructor}</Text>
@@ -56,35 +57,36 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   card: {
-    borderRadius: 15,
-    padding: normalize(10),
+    borderRadius: 18,
+    padding: normalize(12),
     alignItems: 'center',
-    elevation: 10,
+    elevation: 6,
     shadowColor: COLORS.grey,
     shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
   },
   inline: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   courseImage: {
-    width: normalize(80),
-    height: normalize(80),
-    borderRadius: 10,
-    resizeMode: 'contain',
+    width: normalize(88),
+    height: normalize(88),
+    borderRadius: 14,
+    backgroundColor: COLORS.lightGrey,
   },
   courseDetails: {
-    marginLeft: 10,
+    marginLeft: normalize(12),
     justifyContent: 'space-around',
+    flex: 1,
   },
   courseTitle: {
     color: COLORS.black,
     fontFamily: FONTS.medium,
     fontSize: FONT_SIZES.REGULAR,
-    // flex: 1,
-    width: 230,
+    width: '100%',
+    lineHeight: normalize(24),
   },
   courseAuthor: {
     color: COLORS.grey,

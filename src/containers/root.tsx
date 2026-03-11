@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   StatusBar,
   Image,
@@ -6,10 +6,13 @@ import {
   Platform,
   Text,
   ScrollView,
+  Animated,
+  Easing,
 } from 'react-native';
 import {
   getFocusedRouteNameFromRoute,
   NavigationContainer,
+  useIsFocused,
   useNavigation,
 } from '@react-navigation/native';
 import {
@@ -63,6 +66,8 @@ import {
   homeIconActive,
   learnIcon,
   learnIconActive,
+  userIcon,
+  userColorIcon,
 } from '../constants/images';
 import {COLORS, FONTS, FONT_SIZES} from '../themes/styles';
 import {useScrollContext, ScrollProvider} from '../contexts/ScrollContext';
@@ -86,6 +91,43 @@ import {
   resolveRootFlowView,
 } from './rootFlow';
 import Loading from '../components/UI/Loading';
+
+const TabTransitionScene: React.FC<{children: React.ReactNode}> = ({children}) => {
+  const isFocused = useIsFocused();
+  const opacity = React.useRef(new Animated.Value(isFocused ? 1 : 0.95)).current;
+  const scale = React.useRef(new Animated.Value(isFocused ? 1 : 0.99)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(opacity, {
+        toValue: isFocused ? 1 : 0.95,
+        duration: 220,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+      Animated.timing(scale, {
+        toValue: isFocused ? 1 : 0.99,
+        duration: 220,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [isFocused, opacity, scale]);
+
+  return (
+    <Animated.View style={{flex: 1, opacity, transform: [{scale}]}}>
+      {children}
+    </Animated.View>
+  );
+};
+
+const withTabTransition = <T extends object>(Component: React.ComponentType<T>) => {
+  return (props: T) => (
+    <TabTransitionScene>
+      <Component {...props} />
+    </TabTransitionScene>
+  );
+};
 
 type CustomerRootStackParamList = {
   Home: {
@@ -495,7 +537,7 @@ const VendorBottomTabNavigation: React.FC = () => {
       }}>
       <VendorTab.Screen
         name="DASHBOARD_TAB"
-        component={DashboardStackNavigation}
+        component={withTabTransition(DashboardStackNavigation)}
         listeners={({navigation}) => ({
           tabPress: e => {
             const isAlreadyFocused = navigation.isFocused();
@@ -521,7 +563,7 @@ const VendorBottomTabNavigation: React.FC = () => {
           ),
           tabBarIcon: ({focused}) => (
             <Image
-              source={focused ? homeIconActive : homeIcon}
+              source={focused ? userColorIcon : userIcon}
               style={styles.icon}
             />
           ),
@@ -529,7 +571,7 @@ const VendorBottomTabNavigation: React.FC = () => {
       />
       <VendorTab.Screen
         name="MY_PRODUCTS"
-        component={MyProductsStackNavigation}
+        component={withTabTransition(MyProductsStackNavigation)}
         listeners={({navigation}) => ({
           tabPress: e => {
             const isAlreadyFocused = navigation.isFocused();
@@ -563,7 +605,7 @@ const VendorBottomTabNavigation: React.FC = () => {
       />
       <VendorTab.Screen
         name="RECEIVED_ORDERS"
-        component={OrdersStackNavigation}
+        component={withTabTransition(OrdersStackNavigation)}
         listeners={({navigation}) => ({
           tabPress: e => {
             const isAlreadyFocused = navigation.isFocused();
@@ -597,7 +639,7 @@ const VendorBottomTabNavigation: React.FC = () => {
       />
       <VendorTab.Screen
         name="CHATS_TAB"
-        component={ChatStackNavigation}
+        component={withTabTransition(ChatStackNavigation)}
         listeners={({navigation}) => ({
           tabPress: e => {
             const isAlreadyFocused = navigation.isFocused();
@@ -651,7 +693,7 @@ const BottomTabNavigation: React.FC<{
       }}>
       <Tab.Screen
         name="HOME_TAB"
-        component={HomeStackNavigation}
+        component={withTabTransition(HomeStackNavigation)}
         listeners={({navigation}) => ({
           tabPress: e => {
             const isAlreadyFocused = navigation.isFocused();
@@ -691,7 +733,7 @@ const BottomTabNavigation: React.FC<{
       />
       <Tab.Screen
         name="Learn"
-        component={LearnStackNavigation}
+        component={withTabTransition(LearnStackNavigation)}
         listeners={({navigation}) => ({
           tabPress: e => {
             const isAlreadyFocused = navigation.isFocused();
@@ -725,7 +767,6 @@ const BottomTabNavigation: React.FC<{
             ),
             tabBarStyle: [
               'Lesson',
-              'Courses',
               'Profile',
               'MyAccount',
               'LessonDetail',
@@ -737,7 +778,7 @@ const BottomTabNavigation: React.FC<{
       />
       <Tab.Screen
         name="SERVICES_TAB"
-        component={ServicesStackNavigation}
+        component={withTabTransition(ServicesStackNavigation)}
         listeners={({navigation}) => ({
           tabPress: e => {
             const isAlreadyFocused = navigation.isFocused();
@@ -779,7 +820,7 @@ const BottomTabNavigation: React.FC<{
       />
       <Tab.Screen
         name="REQUESTS_TAB"
-        component={RequestsStackNavigation}
+        component={withTabTransition(RequestsStackNavigation)}
         listeners={({navigation}) => ({
           tabPress: e => {
             const isAlreadyFocused = navigation.isFocused();
@@ -822,7 +863,7 @@ const BottomTabNavigation: React.FC<{
       {showSellerTab ? (
         <Tab.Screen
           name="SELLER_TAB"
-          component={DashboardStackNavigation}
+          component={withTabTransition(DashboardStackNavigation)}
           listeners={({navigation}) => ({
             tabPress: () => {
               const isAlreadyFocused = navigation.isFocused();
@@ -850,7 +891,7 @@ const BottomTabNavigation: React.FC<{
               ),
               tabBarIcon: ({focused}) => (
                 <Image
-                  source={focused ? homeIconActive : homeIcon}
+                  source={focused ? userColorIcon : userIcon}
                   style={styles.icon}
                 />
               ),
@@ -928,7 +969,9 @@ const RootNavigator = () => {
         backgroundColor="transparent"
       />
       <NavigationContainer ref={navigationRef}>
-        {checkingFarmerSetup ? <Loading visible /> : null}
+        {checkingFarmerSetup ? (
+          <Loading visible message="Setting up your workspace" />
+        ) : null}
         {rootFlowView === 'ONBOARDING' ? <OnboardingStackScreenNavigation /> : null}
         {rootFlowView === 'AUTH' ? <AuthStackScreenNavigation /> : null}
         {rootFlowView === 'FARMER_SETUP' ? (

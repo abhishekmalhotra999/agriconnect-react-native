@@ -41,7 +41,18 @@ export type MarketplaceReview = {
   } | null;
 };
 
+const marketplaceFallbackImages = [
+  require('../../assets/images/dump/Regenerative-agriculture-farmer.jpg'),
+  require('../../assets/images/dump/so-many-vegetables-this-field_181624-18619 (1).jpg'),
+  require('../../assets/images/dump/smart-agriculture-iot-with-hand-planting-tree-background_538 (3).jpg'),
+];
+
 const fallbackImage = comingSoon;
+
+const getMarketplaceFallbackImage = (seed: number) => {
+  const list = marketplaceFallbackImages;
+  return list[Math.abs(Number(seed || 0)) % list.length] || fallbackImage;
+};
 
 const normalizeAssetUrl = (value?: string | null): string | null => {
   if (!value) return null;
@@ -76,7 +87,7 @@ const mapMarketplaceProduct = (item: MarketplaceProduct): Product => {
     ),
     shortDescription: description.slice(0, 120),
     description,
-    image: imageUrl ? {uri: imageUrl} : fallbackImage,
+    image: imageUrl ? {uri: imageUrl} : getMarketplaceFallbackImage(item.id),
     imageUrl: imageUrl || undefined,
     category: item.category?.name || 'General',
     categoryId: item.category?.id || null,

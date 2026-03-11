@@ -66,7 +66,18 @@ type ServiceRequest = {
   };
 };
 
+const serviceFallbackImages = [
+  require('../../assets/images/dump/au-eu-action-agenda-banner-555x325px_0.jpg'),
+  require('../../assets/images/dump/Agricultural-Technology-in-Africa-1.jpg'),
+  require('../../assets/images/dump/tractor-working-green-field_23-2151983626.jpg'),
+];
+
 const fallbackImage = comingSoon;
+
+const getServiceFallbackImage = (seed: number) => {
+  const list = serviceFallbackImages;
+  return list[Math.abs(Number(seed || 0)) % list.length] || fallbackImage;
+};
 
 const normalizeAssetUrl = (value?: string | null): string | null => {
   if (!value) return null;
@@ -114,7 +125,7 @@ const mapServiceListingToProduct = (item: ServiceListing): Product => {
     discountedPrice: 'R0',
     shortDescription: description.slice(0, 120),
     description,
-    image: imageUrl ? {uri: imageUrl} : fallbackImage,
+    image: imageUrl ? {uri: imageUrl} : getServiceFallbackImage(item.id),
     imageUrl: imageUrl || undefined,
     category: item.category?.name || 'Service',
     categoryId: item.category?.id || item.service_category_id || null,

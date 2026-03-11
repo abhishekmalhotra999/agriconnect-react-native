@@ -1,6 +1,5 @@
 import React, {useRef, useEffect, useMemo, useState} from 'react';
 import {
-  ActivityIndicator,
   ImageBackground,
   Pressable,
   StyleSheet,
@@ -24,6 +23,7 @@ import {userContext} from '../../contexts/UserContext';
 import {Product} from '../../models/Product';
 import {getMarketplaceProducts} from '../../api/marketplace.api';
 import {getServiceListings} from '../../api/services.api';
+import Loading from '../../components/UI/Loading';
 
 const campaigns = [
   {
@@ -31,7 +31,7 @@ const campaigns = [
     title: 'Fresh Harvest Week',
     subtitle: 'Discover seasonal produce and trusted sellers near you.',
     cta: 'Shop Now',
-    image: require('../../../assets/images/berries.png'),
+    image: require('../../../assets/images/dump/RS7418_FarmAfrica-Kitui-6_lpr-e1724232960212.jpg'),
     action: 'Products' as const,
   },
   {
@@ -39,7 +39,7 @@ const campaigns = [
     title: 'Book Farm Technicians',
     subtitle: 'Repair, diagnostics, and on-site support in minutes.',
     cta: 'Explore Services',
-    image: require('../../../assets/images/tm.png'),
+    image: require('../../../assets/images/dump/HELLO-FUTURE-ServicesAgricolesAfrique-1198x500.jpg'),
     action: 'Services' as const,
   },
   {
@@ -47,7 +47,7 @@ const campaigns = [
     title: 'Learn and Grow Faster',
     subtitle: 'Practical courses to improve farm output and quality.',
     cta: 'Continue Learning',
-    image: require('../../../assets/images/onboarding.png'),
+    image: require('../../../assets/images/dump/Sect2_AGRICULTURE-AND-FOOD_HiRes-32.png'),
     action: 'Learn' as const,
   },
 ];
@@ -295,50 +295,61 @@ const Home: React.FC<HomeScreenProps> = ({ navigation }) => {
 
         <View style={styles.quickActionsSection}>
           <Text style={styles.sectionHeading}>Quick Actions</Text>
-          <View style={styles.quickActionsGrid}>
-          {quickActions.map(item => (
-            <Pressable key={item.title} style={styles.quickCard} onPress={item.action}>
-              <Text style={styles.quickTitle}>{item.title}</Text>
-              <Text style={styles.quickSubtitle}>{item.subtitle}</Text>
-            </Pressable>
-          ))}
+          <View style={styles.sectionSurface}>
+            <View style={styles.quickActionsGrid}>
+            {quickActions.map(item => (
+              <Pressable key={item.title} style={styles.quickCard} onPress={item.action}>
+                <View style={styles.quickChip}>
+                  <Text style={styles.quickChipText}>Open</Text>
+                </View>
+                <Text style={styles.quickTitle}>{item.title}</Text>
+                <Text style={styles.quickSubtitle}>{item.subtitle}</Text>
+              </Pressable>
+            ))}
+            </View>
           </View>
         </View>
 
         <View style={styles.learningSection}>
           <Text style={styles.sectionHeading}>Learning Snapshot</Text>
-          <Pressable style={styles.learningCard} onPress={() => navigation.navigate('Learn')}>
-            <Text style={styles.learningTitle}>{learningSnapshot.activeCourseTitle}</Text>
-            <Text style={styles.learningMeta}>
-              {learningSnapshot.completedLessons}/{learningSnapshot.totalLessons} lessons completed
-            </Text>
-            <Text style={styles.learningMeta}>
-              {learningSnapshot.totalCoursesInProgress} course(s) in progress
-            </Text>
-          </Pressable>
+          <View style={styles.sectionSurface}>
+            <Pressable style={styles.learningCard} onPress={() => navigation.navigate('Learn')}>
+              <Text style={styles.learningTitle}>{learningSnapshot.activeCourseTitle}</Text>
+              <Text style={styles.learningMeta}>
+                {learningSnapshot.completedLessons}/{learningSnapshot.totalLessons} lessons completed
+              </Text>
+              <Text style={styles.learningMeta}>
+                {learningSnapshot.totalCoursesInProgress} course(s) in progress
+              </Text>
+            </Pressable>
+          </View>
         </View>
 
         <View style={styles.recentSection}>
           <Text style={styles.sectionHeading}>Recently Viewed</Text>
-          {preferencesLoading ? (
-            <ActivityIndicator color={COLORS.primary} style={styles.recentLoader} />
-          ) : recentItems.length === 0 ? (
-            <Text style={styles.emptyRecentText}>Your recent items will appear here.</Text>
-          ) : (
-            recentItems.map(item => (
-              <Pressable
-                key={`${item.type || 'item'}-${item.id}`}
-                style={styles.recentCard}
-                onPress={() => openRecentItem(item)}>
-                <View style={styles.recentMetaWrap}>
-                  <Text style={styles.recentType}>{String(item.type || 'item')}</Text>
-                  <Text style={styles.recentTitle}>{item.title || 'Untitled'}</Text>
-                  {!!item.subtitle && <Text style={styles.recentSubtitle}>{item.subtitle}</Text>}
-                </View>
-                <Text style={styles.openText}>Open</Text>
-              </Pressable>
-            ))
-          )}
+          <View style={styles.sectionSurface}>
+            {preferencesLoading ? (
+              <Loading visible inline message="Loading recent activity" />
+            ) : recentItems.length === 0 ? (
+              <Text style={styles.emptyRecentText}>Your recent items will appear here.</Text>
+            ) : (
+              recentItems.map(item => (
+                <Pressable
+                  key={`${item.type || 'item'}-${item.id}`}
+                  style={styles.recentCard}
+                  onPress={() => openRecentItem(item)}>
+                  <View style={styles.recentMetaWrap}>
+                    <Text style={styles.recentType}>{String(item.type || 'item')}</Text>
+                    <Text style={styles.recentTitle}>{item.title || 'Untitled'}</Text>
+                    {!!item.subtitle && <Text style={styles.recentSubtitle}>{item.subtitle}</Text>}
+                  </View>
+                  <View style={styles.openBadge}>
+                    <Text style={styles.openText}>Open</Text>
+                  </View>
+                </Pressable>
+              ))
+            )}
+          </View>
         </View>
 
         <View style={styles.discoverySection}>
@@ -349,25 +360,31 @@ const Home: React.FC<HomeScreenProps> = ({ navigation }) => {
             </Pressable>
           </View>
         </View>
-        {highlightsLoading ? (
-          <ActivityIndicator color={COLORS.primary} style={styles.recentLoader} />
-        ) : serviceHighlights.length === 0 ? (
-          <Text style={styles.emptyRecentText}>Services will appear here once available.</Text>
-        ) : (
-          <View style={styles.highlightListWrap}>
-            {serviceHighlights.map(item => (
-              <Pressable
-                key={`service-${item.id}`}
-                style={styles.highlightCard}
-                onPress={() => navigation.navigate('ServiceDetails', {product: item})}>
-                <Text style={styles.highlightTitle}>{item.name}</Text>
-                <Text style={styles.highlightSubtitle}>
-                  {item.serviceArea || 'Area to be confirmed'}
-                </Text>
-              </Pressable>
-            ))}
+        <View style={styles.highlightListWrap}>
+          <View style={styles.sectionSurface}>
+            {highlightsLoading ? (
+              <Loading visible inline message="Loading service picks" />
+            ) : serviceHighlights.length === 0 ? (
+              <Text style={styles.emptyRecentText}>Services will appear here once available.</Text>
+            ) : (
+              serviceHighlights.map(item => (
+                <Pressable
+                  key={`service-${item.id}`}
+                  style={styles.highlightCard}
+                  onPress={() => navigation.navigate('ServiceDetails', {product: item})}>
+                  <View style={styles.highlightMetaWrap}>
+                    <Text style={styles.highlightPill}>Service</Text>
+                    <Text style={styles.highlightTitle}>{item.name}</Text>
+                    <Text style={styles.highlightSubtitle}>
+                      {item.serviceArea || 'Area to be confirmed'}
+                    </Text>
+                  </View>
+                  <Text style={styles.highlightArrow}>></Text>
+                </Pressable>
+              ))
+            )}
           </View>
-        )}
+        </View>
 
         <View style={styles.discoverySection}>
           <View style={styles.discoveryHeader}>
@@ -377,25 +394,31 @@ const Home: React.FC<HomeScreenProps> = ({ navigation }) => {
             </Pressable>
           </View>
         </View>
-        {highlightsLoading ? (
-          <ActivityIndicator color={COLORS.primary} style={styles.recentLoader} />
-        ) : marketplaceHighlights.length === 0 ? (
-          <Text style={styles.emptyRecentText}>Products will appear here once available.</Text>
-        ) : (
-          <View style={styles.highlightListWrap}>
-            {marketplaceHighlights.map(item => (
-              <Pressable
-                key={`market-${item.id}`}
-                style={styles.highlightCard}
-                onPress={() => navigation.navigate('ProductDetails', {product: item})}>
-                <Text style={styles.highlightTitle}>{item.name}</Text>
-                <Text style={styles.highlightSubtitle}>
-                  {item.category} • {item.discountedPrice}
-                </Text>
-              </Pressable>
-            ))}
+        <View style={styles.highlightListWrap}>
+          <View style={styles.sectionSurface}>
+            {highlightsLoading ? (
+              <Loading visible inline message="Loading market highlights" />
+            ) : marketplaceHighlights.length === 0 ? (
+              <Text style={styles.emptyRecentText}>Products will appear here once available.</Text>
+            ) : (
+              marketplaceHighlights.map(item => (
+                <Pressable
+                  key={`market-${item.id}`}
+                  style={styles.highlightCard}
+                  onPress={() => navigation.navigate('ProductDetails', {product: item})}>
+                  <View style={styles.highlightMetaWrap}>
+                    <Text style={styles.highlightPill}>Product</Text>
+                    <Text style={styles.highlightTitle}>{item.name}</Text>
+                    <Text style={styles.highlightSubtitle}>
+                      {item.category} - {item.discountedPrice}
+                    </Text>
+                  </View>
+                  <Text style={styles.highlightArrow}>></Text>
+                </Pressable>
+              ))
+            )}
           </View>
-        )}
+        </View>
       </AnimatedHeaderScrollView>
     </View>
   );
@@ -419,6 +442,8 @@ const styles = StyleSheet.create({
     height: normalize(160),
     borderRadius: normalize(14),
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.35)',
   },
   bannerImage: {
     flex: 1,
@@ -463,6 +488,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     padding: normalize(14),
     marginBottom: normalize(12),
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
   },
   heroTitle: {
     color: COLORS.white,
@@ -514,6 +541,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: normalize(16),
     marginBottom: normalize(10),
   },
+  sectionSurface: {
+    borderWidth: 1,
+    borderColor: COLORS.lightGrey,
+    borderRadius: normalize(14),
+    backgroundColor: COLORS.white,
+    padding: normalize(10),
+  },
   quickActionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -526,6 +560,20 @@ const styles = StyleSheet.create({
     borderRadius: normalize(12),
     padding: normalize(12),
     backgroundColor: COLORS.white,
+    minHeight: normalize(94),
+  },
+  quickChip: {
+    alignSelf: 'flex-start',
+    borderRadius: normalize(12),
+    paddingHorizontal: normalize(7),
+    paddingVertical: normalize(2),
+    backgroundColor: COLORS.primaryLight,
+    marginBottom: normalize(4),
+  },
+  quickChipText: {
+    color: COLORS.primary,
+    fontFamily: FONTS.medium,
+    fontSize: FONT_SIZES.XXSMALL,
   },
   quickTitle: {
     color: COLORS.darkText,
@@ -609,6 +657,13 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.medium,
     fontSize: FONT_SIZES.XSMALL,
   },
+  openBadge: {
+    borderRadius: normalize(12),
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+    paddingHorizontal: normalize(8),
+    paddingVertical: normalize(3),
+  },
   discoverySection: {
     paddingHorizontal: normalize(16),
     marginBottom: normalize(2),
@@ -626,7 +681,6 @@ const styles = StyleSheet.create({
   highlightListWrap: {
     paddingHorizontal: normalize(16),
     marginBottom: normalize(10),
-    gap: normalize(8),
   },
   highlightCard: {
     borderWidth: 1,
@@ -634,6 +688,25 @@ const styles = StyleSheet.create({
     borderRadius: normalize(10),
     padding: normalize(10),
     backgroundColor: COLORS.white,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: normalize(8),
+  },
+  highlightMetaWrap: {
+    flex: 1,
+    paddingRight: normalize(10),
+  },
+  highlightPill: {
+    alignSelf: 'flex-start',
+    color: COLORS.primary,
+    backgroundColor: COLORS.primaryLight,
+    fontFamily: FONTS.medium,
+    fontSize: FONT_SIZES.XXSMALL,
+    paddingHorizontal: normalize(7),
+    paddingVertical: normalize(2),
+    borderRadius: normalize(12),
+    marginBottom: normalize(5),
   },
   highlightTitle: {
     color: COLORS.darkText,
@@ -645,6 +718,11 @@ const styles = StyleSheet.create({
     color: COLORS.grey,
     fontFamily: FONTS.regular,
     fontSize: FONT_SIZES.XSMALL,
+  },
+  highlightArrow: {
+    color: COLORS.primary,
+    fontFamily: FONTS.semiBold,
+    fontSize: FONT_SIZES.REGULAR,
   }
 });
 

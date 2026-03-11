@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import {COLORS, FONTS, FONT_SIZES} from '../../../themes/styles';
-import {adsImage} from '../../../constants/images';
 import {normalize} from '../../../utils/util';
 import navigationService from '../../../navigation/navigationService';
 import {useAppSelector} from '../../../store/storage';
@@ -19,7 +18,10 @@ interface AdsProps {
 }
 
 const data: AdsProps[] = [
-  {id: 1, categoryImage: adsImage},
+  {
+    id: 1,
+    categoryImage: require('../../../../assets/images/dump/empowering_small_farmers-996x567.jpg'),
+  },
   // {id: 2, categoryImage: adsImage},
 ];
 
@@ -78,7 +80,8 @@ const styles = StyleSheet.create({
   image: {
     width: 263,
     height: 154,
-    resizeMode: 'contain',
+    resizeMode: 'cover',
+    borderRadius: normalize(12),
     // backgroundColor: 'black',
   },
   categoryTextContainer: {

@@ -122,9 +122,13 @@ test.describe('React AgriConnect user smoke', () => {
 
     if (await marketplaceCards.count()) {
       await expect(marketplaceCards.first()).toBeVisible()
-      const firstMarketplaceImage = marketplaceCards.first().locator('img.card-img-top').first()
-      await expect(firstMarketplaceImage).toBeVisible()
-      await expect(firstMarketplaceImage).toHaveAttribute('src', /.+/)
+
+      // Some seeded products may not include an image. Validate image markup only when present.
+      const marketplaceImages = page.locator('.course-card img.card-img-top')
+      if (await marketplaceImages.count()) {
+        await expect(marketplaceImages.first()).toBeVisible()
+        await expect(marketplaceImages.first()).toHaveAttribute('src', /.+/)
+      }
     } else {
       await expect(noProducts).toBeVisible()
     }
@@ -144,9 +148,11 @@ test.describe('React AgriConnect user smoke', () => {
       return
     }
 
-    const firstServiceImage = page.locator('.course-card img.card-img-top').first()
-    await expect(firstServiceImage).toBeVisible()
-    await expect(firstServiceImage).toHaveAttribute('src', /.+/)
+    const serviceImages = page.locator('.course-card img.card-img-top')
+    if (await serviceImages.count()) {
+      await expect(serviceImages.first()).toBeVisible()
+      await expect(serviceImages.first()).toHaveAttribute('src', /.+/)
+    }
 
     await page.locator('.course-card').first().click()
     await expect(page).toHaveURL(/\/services\/\d+$/)

@@ -36,10 +36,9 @@ import {
 } from '../../../api/preferences.api';
 
 const images = [
-  require('../../../../assets/images/banner.png'),
-  require('../../../../assets/images/banner.png'),
-  require('../../../../assets/images/banner.png'),
-  require('../../../../assets/images/banner.png'),
+  require('../../../../assets/images/dump/Maximizing-Profits-in-Agriculture-The-Importance-of-Value-Ad.jpg'),
+  require('../../../../assets/images/dump/Digital-Agriculture-Africa-sdf-copyright-FSPN-Africa.jpg'),
+  require('../../../../assets/images/dump/Agricultural-Technology-in-Africa-1.jpg'),
 ]
 
 const ProductDetails: React.FC<ProductDetailsScreenProps> = ({ navigation, route }) => {

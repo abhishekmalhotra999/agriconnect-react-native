@@ -16,6 +16,7 @@ import {COLORS} from '../../../themes/styles';
 import Button from '../../../components/UI/Button';
 import {updateLessonProgress} from '../../../api/learn.api';
 import learnActions from '../../../store/slices/learn.slice';
+import {listItem3} from '../../../constants/images';
 
 const tagsStyles = {
   strong: {
@@ -45,6 +46,18 @@ export default function LessonDetail({route}) {
   const lessonDetail = useMemo(() => {
     return lessons.find((lesson: Lesson) => lesson.id == lessonId);
   }, [lessons, lessonId]);
+
+  const heroSource = useMemo(() => {
+    if (lessonDetail?.thumbnailUrl) {
+      return {uri: lessonDetail.thumbnailUrl};
+    }
+
+    if (lessonDetail?.asset?.contentType === 'image' && lessonDetail?.asset?.url) {
+      return {uri: lessonDetail.asset.url};
+    }
+
+    return listItem3;
+  }, [lessonDetail]);
 
   const lessonHtml = useMemo(() => {
     const rawContent =
@@ -87,6 +100,8 @@ export default function LessonDetail({route}) {
     <View style={styles.wrapper}>
       <Header title={lessonDetail?.title} goBack icons={false} />
       <ScrollView style={styles.content}>
+        <Image source={heroSource} style={styles.heroImage} resizeMode="cover" />
+
         <View style={styles.control}>
           <Text style={styles.instructorText}>Instructor: {'admin'}</Text>
           <Button
@@ -103,21 +118,6 @@ export default function LessonDetail({route}) {
             disabled={loading || !!isLessonCompleted}
           />
         </View>
-        {lessonDetail?.thumbnailUrl ? (
-          <Image
-            source={{uri: lessonDetail.thumbnailUrl}}
-            style={styles.thumbnail}
-            resizeMode="cover"
-          />
-        ) : null}
-
-        {lessonDetail?.asset?.contentType === 'image' && lessonDetail?.asset?.url ? (
-          <Image
-            source={{uri: lessonDetail.asset.url}}
-            style={styles.assetImage}
-            resizeMode="cover"
-          />
-        ) : null}
         {lessonHtml ? (
           <RenderHtml
             source={{html: lessonHtml}}
@@ -138,20 +138,25 @@ export default function LessonDetail({route}) {
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
-    // paddingBottom: 60,
-    // paddingTop: 10,
+    backgroundColor: COLORS.white,
   },
   content: {
-    // padding: 20,
     paddingHorizontal: 20,
-    // paddingBottom: 60,
-    // paddingBottom: normalize(150),
     flexGrow: 1,
+  },
+  heroImage: {
+    width: '100%',
+    height: normalize(200),
+    borderRadius: normalize(14),
+    marginTop: normalize(12),
+    marginBottom: normalize(10),
+    backgroundColor: COLORS.lightGrey,
   },
   htmlStyle: {
     fontSize: 16,
-    // color: COLORS.grey,
     paddingVertical: 10,
+    lineHeight: 24,
+    color: COLORS.black,
   },
   emptyText: {
     color: COLORS.grey,
@@ -159,29 +164,19 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     paddingVertical: 10,
   },
-  thumbnail: {
-    width: '100%',
-    height: normalize(180),
-    borderRadius: normalize(10),
-    marginBottom: normalize(10),
-  },
-  assetImage: {
-    width: '100%',
-    height: normalize(190),
-    borderRadius: normalize(10),
-    marginBottom: normalize(12),
-  },
   control: {
-    paddingVertical: 20,
+    paddingVertical: 14,
     justifyContent: 'space-between',
     flexDirection: 'row',
     alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
   button: {
     backgroundColor: COLORS.orange,
-    paddingVertical: 6,
-    borderRadius: 4,
-    paddingHorizontal: 5,
+    paddingVertical: 8,
+    borderRadius: 8,
+    paddingHorizontal: 10,
   },
   buttonLabelStyle: {
     fontSize: 12,
