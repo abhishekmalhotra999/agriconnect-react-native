@@ -39,7 +39,7 @@ const Learn: React.FC<LearnScreenProps> = ({navigation}) => {
         const courses = await getAllCourses(authToken);
         dispatch(learnAction.saveAllCourses(courses));
         console.log('all courses', courses);
-        const allLessonsObj = courses.map(course => ({
+        const allLessonsObj = (courses || []).map(course => ({
           courseId: course.id,
           promise: getLesson(course.id, authToken),
         }));
@@ -54,19 +54,20 @@ const Learn: React.FC<LearnScreenProps> = ({navigation}) => {
         console.log('completed lessons', completedLessons);
 
         for (let index in allLessons) {
-          let totalCompleted = 0,
-            totalLessons = allLessons[index]?.length;
-          for (let lesson of allLessons[index]) {
-            const isCompleted = completedLessons.find(
-              cLesson => cLesson.lesson_id === lesson.id,
-            );
-            if (isCompleted) {
-              totalCompleted += 1;
-            }
-            delete allLessonsObj[index].promise;
-            allLessonsObj[index].completedLessons = totalCompleted;
-            allLessonsObj[index].totalLessons = totalLessons;
-          }
+          const lessonsForCourse = Array.isArray(allLessons[index])
+            ? allLessons[index]
+            : [];
+          const totalLessons = lessonsForCourse.length;
+
+          const totalCompleted = lessonsForCourse.filter(lesson =>
+            (completedLessons || []).some(
+              cLesson => String(cLesson.lesson_id) === String(lesson.id),
+            ),
+          ).length;
+
+          delete allLessonsObj[index].promise;
+          allLessonsObj[index].completedLessons = totalCompleted;
+          allLessonsObj[index].totalLessons = totalLessons;
         }
         dispatch(learnAction.saveProgress(allLessonsObj));
       } catch (error) {

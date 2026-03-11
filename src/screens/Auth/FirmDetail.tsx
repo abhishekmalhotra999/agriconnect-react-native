@@ -34,6 +34,7 @@ import {signup} from '../../api/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {authActions} from '../../store/slices/auth.slice';
 import ErrorText from '../../components/UI/ErrorText';
+import {buildFinalSignupPayload} from './signupFlow';
 
 type FormData = {
   technicianType?: string;
@@ -64,7 +65,9 @@ const FarmingSchema = yup.object().shape({
 });
 
 const FirmDetail: React.FC<FirmDetailScreenProps> = ({navigation, route}) => {
-  const {accountType} = route.params;
+  const {accountType, personalDetails} = route.params;
+  const normalizedAccountType = String(accountType || '').toLowerCase();
+  const isFarmerAccount = normalizedAccountType === 'farmer';
   const {navigate} = navigation;
   const {login} = userContext();
   const userDetail = useAppSelector(state => state.signup);
@@ -78,7 +81,7 @@ const FirmDetail: React.FC<FirmDetailScreenProps> = ({navigation, route}) => {
     formState: {errors},
   } = useForm<any>({
     resolver:
-      accountType == 'Farmer'
+      isFarmerAccount
         ? yupResolver(FarmingSchema)
         : yupResolver(TechnicianSchema),
   });
@@ -89,12 +92,17 @@ const FirmDetail: React.FC<FirmDetailScreenProps> = ({navigation, route}) => {
 
   const onSubmit = async (data: FormData) => {
     console.log('FORM DATA:', data);
-    const responseData = await signup({
-      ...data,
+
+    const signupPayload = buildFinalSignupPayload(personalDetails, data, {
       phone: userDetail.phone,
       email: userDetail.email,
-      professionType: userDetail.profile.professionType,
-      address: userDetail.profile.address,
+      professionType: userDetail?.profile?.professionType || accountType,
+      address: userDetail?.profile?.address,
+      name: userDetail.name,
+    });
+
+    const responseData = await signup({
+      ...signupPayload,
     });
     if (responseData.errors) {
       setErrorText(responseData.errors);
@@ -104,7 +112,7 @@ const FirmDetail: React.FC<FirmDetailScreenProps> = ({navigation, route}) => {
     }
     if (responseData.user) {
       await AsyncStorage.setItem('authToken', responseData.user.jwtToken);
-      login(responseData);
+      login(responseData.user);
       dispatch(
         authActions.saveAuthToken({authToken: responseData.user.jwtToken}),
       );
@@ -146,7 +154,7 @@ const FirmDetail: React.FC<FirmDetailScreenProps> = ({navigation, route}) => {
               </Text>
             </View>
 
-            {accountType == 'Farmer' ? (
+            {isFarmerAccount ? (
               <Controller
                 control={control}
                 name="farmingType"
@@ -178,7 +186,7 @@ const FirmDetail: React.FC<FirmDetailScreenProps> = ({navigation, route}) => {
               />
             )}
 
-            {accountType == 'Farmer' && (
+            {isFarmerAccount && (
               <Controller
                 control={control}
                 name="farmSize"

@@ -1,23 +1,30 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+import {API_URL} from '@env';
+
+const DEFAULT_API_URL = 'http://localhost:3000';
+
+const normalizedBaseUrl = (API_URL || DEFAULT_API_URL).replace(/\/$/, '');
 
 const apiClient = axios.create({
-  baseURL: 'http://104.248.246.180',
-  // headers: {
-  //   'Content-Type': 'application/json',
-  // },
+  baseURL: normalizedBaseUrl,
+  timeout: 10000,
 });
 
 apiClient.interceptors.request.use(async config => {
   const token = await AsyncStorage.getItem('authToken');
-  console.log(config);
-  if (!token) {
-    return config;
-  }
-  if (config.headers['Content-Type'] != 'multipart/form-data') {
+
+  const contentType = config.headers['Content-Type'];
+  const isMultipart = contentType === 'multipart/form-data';
+
+  if (!isMultipart && !contentType) {
     config.headers['Content-Type'] = 'application/json';
   }
-  config.headers.Authorization = 'bearer ' + token;
+
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
   return config;
 });
 

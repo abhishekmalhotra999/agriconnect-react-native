@@ -22,8 +22,10 @@
     "db:mysql:down": "docker compose -f docker-compose.mysql.yml down",
     "db:copy:pg-to-mysql": "node scripts/migrate_pg_to_mysql.js",
     "test": "NODE_ENV=test jest --runInBand",
+    "test:mysql": "set -a && . ./.env.mysql && set +a && DB_DIALECT=mysql NODE_ENV=test jest --runInBand",
     "test:watch": "NODE_ENV=test jest --watch",
     "test:admin": "NODE_ENV=test jest --runInBand tests/admin",
+    "test:admin:mysql": "set -a && . ./.env.mysql && set +a && DB_DIALECT=mysql NODE_ENV=test jest --runInBand tests/admin",
     "test:admin:watch": "NODE_ENV=test jest --watch tests/admin",
     "qa:admin:pipeline": "bash ./scripts/qa_admin_pipeline.sh",
     "qa:admin:e2e": "npm --prefix admin-panel run test:e2e"

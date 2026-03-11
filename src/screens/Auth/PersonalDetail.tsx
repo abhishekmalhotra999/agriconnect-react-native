@@ -27,6 +27,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {userContext} from '../../contexts/UserContext';
 import {authActions} from '../../store/slices/auth.slice';
 import ErrorText from '../../components/UI/ErrorText';
+import {requiresFirmDetailsStep} from './signupFlow';
 
 type FormData = {
   email: string;
@@ -82,10 +83,25 @@ const PersonalDetail: React.FC<PersonalDetailScreenProps> = ({navigation}) => {
 
   const onSubmit = async (data: FormData) => {
     console.log('FORM DATA:', data);
+
+    if (requiresFirmDetailsStep(authData.accountType)) {
+      navigate('FirmDetail', {
+        accountType: authData.accountType,
+        personalDetails: {
+          ...data,
+          phone: authData.phone,
+          name: authData.name,
+          professionType: authData.accountType,
+        },
+      });
+      return;
+    }
+
     const signupResponse = await signup({
       ...data,
       professionType: authData.accountType,
       phone: authData.phone,
+      name: authData.name,
     });
     if (signupResponse.errors) {
       setErrorText(signupResponse.errors);
@@ -101,7 +117,7 @@ const PersonalDetail: React.FC<PersonalDetailScreenProps> = ({navigation}) => {
         dispatch(
           authActions.saveAuthToken({authToken: signupResponse.user.jwtToken}),
         );
-        login(signupResponse);
+        login(signupResponse.user);
       } else {
         navigate('FirmDetail', {
           accountType: signupResponse.user.profile.professionType,

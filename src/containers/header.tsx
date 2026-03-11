@@ -29,9 +29,9 @@ interface HeaderProps {
   mode?: string;
   onPress?: () => void;
   goBack?: boolean;
-  showButtons: boolean;
-  otherTextStyle: {[key: string]: any};
-  icons: boolean;
+  showButtons?: boolean;
+  otherTextStyle?: {[key: string]: any};
+  icons?: boolean;
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -93,7 +93,6 @@ const Header: React.FC<HeaderProps> = ({
           )}
         </View>
       )}
-      )
     </SafeAreaView>
   );
 };

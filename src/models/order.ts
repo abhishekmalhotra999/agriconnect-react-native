@@ -6,4 +6,8 @@ export interface Order {
   image: any;
   status: string,
   createdAt: string;
+  requesterName?: string;
+  requesterPhone?: string;
+  requesterEmail?: string;
+  message?: string;
 }

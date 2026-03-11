@@ -14,6 +14,11 @@ export type Lesson = {
   contentPlain: string;
   thumbnailUrl: string;
   title: string;
+  asset?: {
+    url: string;
+    contentType: 'image' | 'video';
+    duration?: number | null;
+  } | null;
 };
 
 export type completedLesson = {

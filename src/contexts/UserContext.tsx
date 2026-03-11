@@ -15,7 +15,7 @@ import {authActions} from '../store/slices/auth.slice';
 interface UserContextType {
   user: User | null;
   loggedIn: boolean;
-  login: (user: User) => void;
+  login: (user: User | {user: User}) => void;
   logout: () => void;
 }
 
@@ -36,11 +36,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
   const checkLoginStatus = async () => {
     try {
       const storedUser = await AsyncStorage.getItem('user');
-      console.log('stored', storedUser);
+
       if (storedUser) {
         const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
-        dispatch(authActions.saveUserDetail(JSON.parse(storedUser)?.user));
+        const normalizedUser = parsedUser?.user || parsedUser;
+
+        setUser(normalizedUser);
+        dispatch(authActions.saveUserDetail(normalizedUser));
         setLoggedIn(true);
       } else {
         setUser(null);
@@ -58,12 +60,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
     checkLoginStatus();
   }, []);
 
-  const login = (userData: User) => {
+  const login = (userData: User | {user: User}) => {
     setLoading(true);
     setTimeout(() => {
-      setUser(userData);
+      const normalizedUser = (userData as {user?: User})?.user ||
+        (userData as User);
+
+      setUser(normalizedUser);
       setLoggedIn(true);
-      AsyncStorage.setItem('user', JSON.stringify(userData));
+      AsyncStorage.setItem('user', JSON.stringify(normalizedUser));
       setLoading(false);
     }, 100);
   };

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { StyleSheet, ScrollView, View, Platform } from 'react-native';
+import React, {useMemo, useState} from 'react';
+import {StyleSheet, View} from 'react-native';
 import { OrdersScreenProps } from '../../../navigation/types';
 import Header from '../../../containers/header';
 import { COLORS } from '../../../themes/styles';
@@ -10,51 +10,82 @@ import OrderList from '../../../components/Vendor/Order/OrderList';
 import Filters from '../../../components/UI/Filters';
 import AnimatedHeaderScrollView from '../../../components/UI/AnimatedScrollView';
 import { Order } from '../../../models/order';
+import {useFocusEffect} from '@react-navigation/native';
+import {userContext} from '../../../contexts/UserContext';
+import {getServiceRequestsForTechnician} from '../../../api/services.api';
+import ErrorText from '../../../components/UI/ErrorText';
 
-const options = ['All', 'In Transit', 'Confirmed', 'Cancelled', 'Delivered'];
-
-const orders = [
-  {
-    id: 1,
-    name: 'Berries',
-    amount: 'R500',
-    quantity: 2,
-    status: 'Confirmed',
-    image: require('../../../../assets/images/berries.png'),
-    createdAt: '22 Jan, 2024',
-  },
-  {
-    id: 2,
-    name: 'Tulsi',
-    amount: 'R100',
-    quantity: 5,
-    status: 'In Transit',
-    image: require('../../../../assets/images/tulsi.png'),
-    createdAt: '12 Feb, 2024',
-  },
-  {
-    id: 3,
-    name: 'Milk',
-    amount: 'R70',
-    quantity: 5,
-    status: 'Delivered',
-    image: require('../../../../assets/images/milk.png'),
-    createdAt: '12 Feb, 2024',
-  },
-  {
-    id: 4,
-    name: 'Tomatoes',
-    amount: 'R50',
-    quantity: 5,
-    status: 'Cancelled',
-    image: require('../../../../assets/images/tomatos.png'),
-    createdAt: '09 Feb, 2024',
-  },
+const technicianOptions = [
+  'All',
+  'Pending',
+  'Accepted',
+  'In Progress',
+  'Completed',
+  'Rejected',
+  'Cancelled',
 ];
+
+const normalizeStatus = (value: string) => {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/\s+/g, '_');
+};
 
 const Orders: React.FC<OrdersScreenProps> = ({ navigation }) => {
   useStatusBarStyle('dark-content', 'light-content');
+  const {user} = userContext();
   const [activeFilter, setActiveFilter] = useState('All');
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const normalizedRole =
+    (user?.accountType || user?.profile?.professionType || '').toLowerCase?.() ||
+    '';
+  const isTechnician = normalizedRole === 'technician';
+
+  useFocusEffect(
+    React.useCallback(() => {
+      let mounted = true;
+
+      const loadOrders = async () => {
+        if (!isTechnician) {
+          setOrders([]);
+          return;
+        }
+
+        try {
+          setLoading(true);
+          setError('');
+          const result = await getServiceRequestsForTechnician();
+          if (mounted) {
+            setOrders(result);
+          }
+        } catch (loadError: any) {
+          if (mounted) {
+            setError(loadError?.message || 'Unable to load requests.');
+          }
+        } finally {
+          if (mounted) {
+            setLoading(false);
+          }
+        }
+      };
+
+      loadOrders();
+
+      return () => {
+        mounted = false;
+      };
+    }, [isTechnician]),
+  );
+
+  const filteredOrders = useMemo(() => {
+    if (activeFilter === 'All') return orders;
+    return orders.filter(item =>
+      normalizeStatus(String(item.status || '')) === normalizeStatus(activeFilter),
+    );
+  }, [activeFilter, orders]);
 
   function editOrder(order: Order) {
     navigation.navigate('OrderDetails', { order })
@@ -71,12 +102,21 @@ const Orders: React.FC<OrdersScreenProps> = ({ navigation }) => {
           </>
         )}
       >
-        <Filters 
-          options={options}
-          activeFilter={activeFilter} 
-          onFilterChange={setActiveFilter}
+        {isTechnician && (
+          <Filters
+            options={technicianOptions}
+            activeFilter={activeFilter}
+            onFilterChange={setActiveFilter}
           />
-        <OrderList orderLists={orders} onPress={editOrder} />
+        )}
+        {!!error && <ErrorText text={error} />}
+        {!isTechnician ? (
+          <ErrorText text="Orders are currently available for technician accounts." />
+        ) : loading ? (
+          <ErrorText text="Loading requests..." />
+        ) : (
+          <OrderList orderLists={filteredOrders} onPress={editOrder} />
+        )}
       </AnimatedHeaderScrollView>
     </View>
   );

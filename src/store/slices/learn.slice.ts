@@ -43,6 +43,9 @@ const learnSlice = createSlice({
       const courseProgressIndex = state.lessonsProgress.findIndex(
         lessonDetail => lessonDetail.courseId === action.payload.courseId,
       );
+      if (courseProgressIndex < 0) {
+        return;
+      }
       const updatedCourseProgress = state.lessonsProgress[courseProgressIndex];
       updatedCourseProgress.completedLessons += 1;
       state.lessonsProgress.splice(

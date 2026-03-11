@@ -11,16 +11,21 @@ const categories = [
   { id: 1, name: 'Fruits', image: require('../../../../assets/images/categories/fruits.png') },
   { id: 2, name: 'Grains', image: require('../../../../assets/images/categories/grains.png') },
   { id: 3, name: 'Herbs', image: require('../../../../assets/images/categories/herbs.png') },
+  { id: 4, name: 'Services', image: require('../../../../assets/images/categories/herbs.png') },
 ];
 
 const CategoryList = () => {
   // const { productCategories } = useProductCategories();
   function viewList() {
-    // NavigationService.navigate('Categories');
+    NavigationService.navigate('Products');
   }
 
   function showProducts(category: Category) {
-    // NavigationService.navigate('Products', { category })
+    if (String(category.name).toLowerCase() === 'services') {
+      NavigationService.navigate('Services');
+      return;
+    }
+    NavigationService.navigate('Products');
   }
   
   return (

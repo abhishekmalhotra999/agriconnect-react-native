@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   StatusBar,
   Image,
@@ -29,6 +29,7 @@ import Orders from '../screens/Vendor/Orders';
 import OrderDetails from '../screens/Vendor/Orders/show';
 import MyProducts from '../screens/Vendor/MyProducts';
 import MyProductDetails from '../screens/Vendor/MyProducts/show';
+import ManageMyProduct from '../screens/Vendor/MyProducts/manage';
 
 // Customer Screens
 import Home from '../screens/Customer/Home';
@@ -39,6 +40,10 @@ import Chats from '../screens/Common/Chats';
 import ChatRoom from '../screens/Common/Chats/ChatRoom';
 import Products from '../screens/Customer/Products';
 import ProductDetails from '../screens/Customer/Products/show';
+import Services from '../screens/Customer/Services';
+import ServiceDetails from '../screens/Customer/Services/show';
+import MyServiceRequests from '../screens/Customer/Services/requests';
+import ServiceRequestDetails from '../screens/Customer/Services/request.show';
 import Profile from '../screens/Common/Profile';
 // import MyAccount from '../screens/Common/Profile/MyAccount';
 import Cart from '../screens/Customer/Cart';
@@ -74,6 +79,13 @@ import LessonDetail from '../screens/Customer/Learn/LessonDetail';
 import ComingSoon from '../screens/ComingSoon';
 import PrivacyPolicy from '../screens/Common/Profile/PrivacyPolicy';
 import HelpCenter from '../screens/Common/Profile/HelpCenter';
+import FarmerOnboardingScreen from '../screens/Vendor/FarmerOnboarding';
+import {getUserPreferences} from '../api/preferences.api';
+import {
+  resolveCustomerBottomTabInitialRoute,
+  resolveRootFlowView,
+} from './rootFlow';
+import Loading from '../components/UI/Loading';
 
 type CustomerRootStackParamList = {
   Home: {
@@ -85,6 +97,7 @@ type CustomerRootStackParamList = {
   BLOGS_TAB: undefined;
   Chats: undefined;
   CHATS_TAB: undefined;
+  SELLER_TAB: undefined;
   Products: undefined;
   ProductDetails: {product: Product};
   ChatRoom: {chatId: number};
@@ -111,6 +124,10 @@ type BlogStackParamList = {
 type ProductStackParamList = {
   Products: undefined;
   ProductDetails: {product: Product};
+  Services: undefined;
+  ServiceDetails: {product: Product};
+  MyServiceRequests: undefined;
+  ServiceRequestDetails: {order: Order};
 };
 
 type VendorRootStackParamList = {
@@ -125,11 +142,15 @@ type VendorRootStackParamList = {
 
 type DashboardStackParamList = {
   Dashboard: undefined;
+  MyProducts: undefined;
+  MyProductDetails: {product: Product};
+  ManageMyProduct: {product?: Product};
 };
 
 type MyProductStackParamList = {
   MyProducts: undefined;
   MyProductDetails: {product: Product};
+  ManageMyProduct: {product?: Product};
 };
 
 type OrderStackParamList = {
@@ -161,7 +182,7 @@ type ChatStackParamList = {
   ChatRoom: {chatId: number};
 };
 type ProfileStachParamList = {
-  Profile: undefined;
+  ProfileHome: undefined;
   MyAccount: undefined;
   PrivacyPolicy: undefined;
   HelpCenter: undefined;
@@ -201,7 +222,7 @@ const ProfileStackNavigation = () => {
   return (
     <ProfileStack.Navigator
       screenOptions={{headerShown: false, ...transitionX}}>
-      <ProfileStack.Screen name="Profile" component={Profile} />
+      <ProfileStack.Screen name="ProfileHome" component={Profile} />
       <ProfileStack.Screen name="MyAccount" component={MyAccount} />
       <ProfileStack.Screen name="PrivacyPolicy" component={PrivacyPolicy} />
       <ProfileStack.Screen name="HelpCenter" component={HelpCenter} />
@@ -215,6 +236,19 @@ const HomeStackNavigation = () => {
       <HomeStack.Screen name="Home" component={Home} />
       <ProductsStack.Screen name="Products" component={Products} />
       <ProductsStack.Screen name="ProductDetails" component={ProductDetails} />
+      <ProductsStack.Screen name="Services" component={Services} />
+      <ProductsStack.Screen
+        name="ServiceDetails"
+        component={ServiceDetails}
+      />
+      <ProductsStack.Screen
+        name="MyServiceRequests"
+        component={MyServiceRequests}
+      />
+      <ProductsStack.Screen
+        name="ServiceRequestDetails"
+        component={ServiceRequestDetails}
+      />
       <HeaderStack.Screen name="Cart" component={Cart} />
       <HeaderStack.Screen
         name="InAppNotifications"
@@ -279,14 +313,29 @@ const LearnStackNavigation = () => {
   );
 };
 
-// const ProductsStackNavigation = () => {
-//   return (
-//     <ProductsStack.Navigator screenOptions={{ headerShown: false, ...transitionX}}>
-//       <ProductsStack.Screen name="Products" component={Products} />
-//       <ProductsStack.Screen name="ProductDetails" component={ProductDetails} />
-//     </ProductsStack.Navigator>
-//   )
-// }
+const ProductsStackNavigation = () => {
+  return (
+    <ProductsStack.Navigator screenOptions={{headerShown: false, ...transitionX}}>
+      <ProductsStack.Screen name="Products" component={Products} />
+      <ProductsStack.Screen name="ProductDetails" component={ProductDetails} />
+      <ProductsStack.Screen name="Services" component={Services} />
+      <ProductsStack.Screen name="ServiceDetails" component={ServiceDetails} />
+      <ProductsStack.Screen
+        name="MyServiceRequests"
+        component={MyServiceRequests}
+      />
+      <ProductsStack.Screen
+        name="ServiceRequestDetails"
+        component={ServiceRequestDetails}
+      />
+      <HeaderStack.Screen
+        name="InAppNotifications"
+        component={InAppNotifications}
+      />
+      <HeaderStack.Screen name="Profile" component={ProfileStackNavigation} />
+    </ProductsStack.Navigator>
+  );
+};
 
 // VENDOR STACK NAVIGATIONS //
 const DashboardStackNavigation = () => {
@@ -294,6 +343,15 @@ const DashboardStackNavigation = () => {
     <DashboardStack.Navigator
       screenOptions={{headerShown: false, ...transitionX}}>
       <DashboardStack.Screen name="Dashboard" component={Dashboard} />
+      <DashboardStack.Screen name="MyProducts" component={MyProducts} />
+      <DashboardStack.Screen
+        name="MyProductDetails"
+        component={MyProductDetails}
+      />
+      <DashboardStack.Screen
+        name="ManageMyProduct"
+        component={ManageMyProduct}
+      />
       <HeaderStack.Screen name="Profile" component={ProfileStackNavigation} />
       <HeaderStack.Screen
         name="InAppNotifications"
@@ -311,6 +369,10 @@ const MyProductsStackNavigation = () => {
       <MyProductsStack.Screen
         name="MyProductDetails"
         component={MyProductDetails}
+      />
+      <MyProductsStack.Screen
+        name="ManageMyProduct"
+        component={ManageMyProduct}
       />
       <HeaderStack.Screen name="Profile" component={ProfileStackNavigation} />
       <HeaderStack.Screen
@@ -395,7 +457,7 @@ const VendorBottomTabNavigation: React.FC = () => {
                     color: focused ? COLORS.primary : COLORS.grey,
                   },
                 ]}>
-                Dashboard
+                Seller
               </Text>
             </>
           ),
@@ -514,12 +576,15 @@ const VendorBottomTabNavigation: React.FC = () => {
 };
 
 // customer tabs //
-const BottomTabNavigation: React.FC = () => {
+const BottomTabNavigation: React.FC<{
+  showSellerTab?: boolean;
+  initialRouteName?: keyof CustomerRootStackParamList;
+}> = ({showSellerTab = false, initialRouteName = 'Learn'}) => {
   const {scrollToTop} = useScrollContext();
 
   return (
     <Tab.Navigator
-      initialRouteName={'Learn' as keyof CustomerRootStackParamList}
+      initialRouteName={initialRouteName}
       screenOptions={{
         headerShown: false,
         tabBarHideOnKeyboard: true,
@@ -528,8 +593,7 @@ const BottomTabNavigation: React.FC = () => {
       }}>
       <Tab.Screen
         name="HOME_TAB"
-        // component={HomeStackNavigation}
-        component={ComingSoon}
+        component={HomeStackNavigation}
         listeners={({navigation}) => ({
           tabPress: e => {
             const isAlreadyFocused = navigation.isFocused();
@@ -615,8 +679,7 @@ const BottomTabNavigation: React.FC = () => {
       />
       <Tab.Screen
         name="BLOGS_TAB"
-        // component={BlogStackNavigation}
-        component={ComingSoon}
+        component={showSellerTab ? ProductsStackNavigation : ComingSoon}
         listeners={({navigation}) => ({
           tabPress: e => {
             const isAlreadyFocused = navigation.isFocused();
@@ -636,7 +699,7 @@ const BottomTabNavigation: React.FC = () => {
                     color: focused ? COLORS.primary : COLORS.grey,
                   },
                 ]}>
-                What's New
+                {showSellerTab ? 'Marketplace' : "What's New"}
               </Text>
             </>
           ),
@@ -683,6 +746,48 @@ const BottomTabNavigation: React.FC = () => {
           ),
         }}
       />
+      {showSellerTab ? (
+        <Tab.Screen
+          name="SELLER_TAB"
+          component={DashboardStackNavigation}
+          listeners={({navigation}) => ({
+            tabPress: () => {
+              const isAlreadyFocused = navigation.isFocused();
+              if (isAlreadyFocused) {
+                scrollToTop('DASHBOARD_TAB');
+              }
+            },
+          })}
+          options={({route}) => {
+            const routeName = getFocusedRouteNameFromRoute(route);
+            return {
+              headerShown: false,
+              tabBarLabel: ({focused}) => (
+                <>
+                  <Text
+                    style={[
+                      styles.label,
+                      {
+                        color: focused ? COLORS.primary : COLORS.grey,
+                      },
+                    ]}>
+                    Seller
+                  </Text>
+                </>
+              ),
+              tabBarIcon: ({focused}) => (
+                <Image
+                  source={focused ? homeIconActive : homeIcon}
+                  style={styles.icon}
+                />
+              ),
+              tabBarStyle: ['Profile', 'MyAccount'].includes(routeName)
+                ? {display: 'none'}
+                : styles.tabBarStyle,
+            };
+          }}
+        />
+      ) : null}
     </Tab.Navigator>
   );
 };
@@ -690,6 +795,57 @@ const BottomTabNavigation: React.FC = () => {
 const RootNavigator = () => {
   const {onBoarded} = useOnboarding();
   const {user, loggedIn} = userContext();
+  const [checkingFarmerSetup, setCheckingFarmerSetup] = useState(false);
+  const [farmerOnboardingCompleted, setFarmerOnboardingCompleted] =
+    useState(true);
+  const normalizedRole =
+    (user?.accountType || user?.profile?.professionType || '')
+      .toLowerCase?.() || '';
+  const isSellerRole =
+    normalizedRole === 'vendor' ||
+    normalizedRole === 'farmer' ||
+    normalizedRole === 'technician';
+  const isFarmerRole = normalizedRole === 'farmer';
+  const rootFlowView = resolveRootFlowView({
+    onBoarded,
+    loggedIn,
+    normalizedRole,
+    farmerOnboardingCompleted,
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!loggedIn || !isFarmerRole) {
+      setCheckingFarmerSetup(false);
+      setFarmerOnboardingCompleted(true);
+      return;
+    }
+
+    setCheckingFarmerSetup(true);
+    getUserPreferences()
+      .then(result => {
+        if (!cancelled) {
+          setFarmerOnboardingCompleted(
+            Boolean(result?.farmerOnboarding?.completed),
+          );
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setFarmerOnboardingCompleted(false);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setCheckingFarmerSetup(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isFarmerRole, loggedIn]);
 
   return (
     <>
@@ -699,19 +855,24 @@ const RootNavigator = () => {
         backgroundColor="transparent"
       />
       <NavigationContainer ref={navigationRef}>
-        {onBoarded ? (
-          loggedIn ? (
-            user?.accountType === 'Vendor' ? (
-              <VendorBottomTabNavigation />
-            ) : (
-              <BottomTabNavigation />
-            )
-          ) : (
-            <AuthStackScreenNavigation />
-          )
-        ) : (
-          <OnboardingStackScreenNavigation />
-        )}
+        {checkingFarmerSetup ? <Loading visible /> : null}
+        {rootFlowView === 'ONBOARDING' ? <OnboardingStackScreenNavigation /> : null}
+        {rootFlowView === 'AUTH' ? <AuthStackScreenNavigation /> : null}
+        {rootFlowView === 'FARMER_SETUP' ? (
+          <FarmerOnboardingScreen
+            onCompleted={() => setFarmerOnboardingCompleted(true)}
+          />
+        ) : null}
+        {rootFlowView === 'FARMER_TABS' ? (
+          <BottomTabNavigation
+            showSellerTab
+            initialRouteName={resolveCustomerBottomTabInitialRoute(
+              rootFlowView,
+            )}
+          />
+        ) : null}
+        {rootFlowView === 'SELLER_TABS' ? <VendorBottomTabNavigation /> : null}
+        {rootFlowView === 'CUSTOMER_TABS' ? <BottomTabNavigation /> : null}
       </NavigationContainer>
     </>
   );

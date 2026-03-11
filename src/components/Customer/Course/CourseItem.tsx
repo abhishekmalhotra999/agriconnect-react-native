@@ -28,7 +28,7 @@ const CourseItem: React.FC<CourseProps> = ({item}) => {
       onPress={courseClickHandler}>
       <Image
         // @ts-ignore
-        source={{uri: item.thumbnailUrl || ''}}
+        source={item.thumbnailUrl ? {uri: item.thumbnailUrl} : undefined}
         style={styles.courseImage}
         resizeMode={FastImage.resizeMode.contain}
       />

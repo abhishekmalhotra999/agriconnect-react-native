@@ -1,4 +1,11 @@
-import {ScrollView, StyleSheet, Text, View} from 'react-native';
+import {
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import Header from '../../../containers/header';
 import {useAppDispatch, useAppSelector} from '../../../store/storage';
 import {useMemo, useState} from 'react';
@@ -23,29 +30,58 @@ export default function LessonDetail({route}) {
   const params = route.params;
   const [loading, setLoading] = useState<boolean>(false);
   const {lessons, completedLessons} = useAppSelector(state => state.learn);
-  const completeLearnState = useAppSelector(state => state.learn);
   const dispatch = useAppDispatch();
+  const {width} = useWindowDimensions();
 
   const lessonId = params.id;
   const courseId = params.courseId;
 
   const isLessonCompleted = useMemo(() => {
-    return completedLessons?.find(leson => leson.lesson_id === lessonId);
+    return completedLessons?.find(
+      leson => String(leson.lesson_id) === String(lessonId),
+    );
   }, [lessonId, completedLessons]);
 
   const lessonDetail = useMemo(() => {
     return lessons.find((lesson: Lesson) => lesson.id == lessonId);
   }, [lessons, lessonId]);
 
-  console.log('printing complete state', completeLearnState, lessonId);
+  const lessonHtml = useMemo(() => {
+    const rawContent =
+      lessonDetail?.content ||
+      (lessonDetail as any)?.content_html ||
+      (lessonDetail as any)?.description ||
+      '';
+
+    const textFallback =
+      lessonDetail?.contentPlain || (lessonDetail as any)?.content_plain || '';
+
+    if (String(rawContent).trim()) {
+      return String(rawContent);
+    }
+
+    if (String(textFallback).trim()) {
+      return `<p>${String(textFallback)}</p>`;
+    }
+
+    return '';
+  }, [lessonDetail]);
 
   const completeLessonHandler = async () => {
+    if (!lessonDetail?.id) {
+      return;
+    }
+
     setLoading(true);
-    const result = await updateLessonProgress(lessonDetail!.id);
-    console.log(result);
-    dispatch(learnActions.addCompletedLesson(result));
-    dispatch(learnActions.incrementLessonProgress({courseId}));
-    setLoading(false);
+    try {
+      const result = await updateLessonProgress(lessonDetail.id);
+      if (result) {
+        dispatch(learnActions.addCompletedLesson(result));
+        dispatch(learnActions.incrementLessonProgress({courseId}));
+      }
+    } finally {
+      setLoading(false);
+    }
   };
   return (
     <View style={styles.wrapper}>
@@ -67,11 +103,33 @@ export default function LessonDetail({route}) {
             disabled={loading || !!isLessonCompleted}
           />
         </View>
-        <RenderHtml
-          source={{html: lessonDetail?.content}}
-          baseStyle={styles.htmlStyle}
-          tagsStyles={tagsStyles}
-        />
+        {lessonDetail?.thumbnailUrl ? (
+          <Image
+            source={{uri: lessonDetail.thumbnailUrl}}
+            style={styles.thumbnail}
+            resizeMode="cover"
+          />
+        ) : null}
+
+        {lessonDetail?.asset?.contentType === 'image' && lessonDetail?.asset?.url ? (
+          <Image
+            source={{uri: lessonDetail.asset.url}}
+            style={styles.assetImage}
+            resizeMode="cover"
+          />
+        ) : null}
+        {lessonHtml ? (
+          <RenderHtml
+            source={{html: lessonHtml}}
+            baseStyle={styles.htmlStyle}
+            tagsStyles={tagsStyles}
+            contentWidth={width}
+          />
+        ) : (
+          <Text style={styles.emptyText}>
+            No lesson content available for this lesson yet.
+          </Text>
+        )}
       </ScrollView>
     </View>
   );
@@ -94,6 +152,24 @@ const styles = StyleSheet.create({
     fontSize: 16,
     // color: COLORS.grey,
     paddingVertical: 10,
+  },
+  emptyText: {
+    color: COLORS.grey,
+    fontSize: 14,
+    lineHeight: 20,
+    paddingVertical: 10,
+  },
+  thumbnail: {
+    width: '100%',
+    height: normalize(180),
+    borderRadius: normalize(10),
+    marginBottom: normalize(10),
+  },
+  assetImage: {
+    width: '100%',
+    height: normalize(190),
+    borderRadius: normalize(10),
+    marginBottom: normalize(12),
   },
   control: {
     paddingVertical: 20,

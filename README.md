@@ -6,6 +6,28 @@ This is a new [**React Native**](https://reactnative.dev) project, bootstrapped 
 
 ## Step 1: Start Metro
 
+### Backend Setup For Local Node API
+
+This app reads backend URL from `API_URL` using `react-native-dotenv`.
+
+1. Create `.env` at project root (or copy from `.env.example`).
+2. Set `API_URL` according to your runtime target:
+
+```sh
+# iOS simulator
+API_URL=http://localhost:3000
+
+# Android emulator
+API_URL=http://10.0.2.2:3000
+
+# Physical device on same LAN
+API_URL=http://<your-machine-lan-ip>:3000
+```
+
+Before running the app, start the backend in `Reference/node_agriconnect`.
+
+For automated test workflows (RN + backend), see `TESTING.md`.
+
 First, you will need to run **Metro**, the JavaScript build tool for React Native.
 
 To start the Metro dev server, run the following command from the root of your React Native project:

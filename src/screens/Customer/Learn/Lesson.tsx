@@ -7,6 +7,7 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  useWindowDimensions,
 } from 'react-native';
 import Header from '../../../containers/header';
 // import {ScrollView} from 'react-native-gesture-handler';
@@ -26,6 +27,7 @@ export default function Lesson({route, navigation}) {
   const {id} = route.params;
   const authToken = useAppSelector(state => state.auth.authToken);
   const dispatch = useAppDispatch();
+  const {width} = useWindowDimensions();
   const {lessons, courses, completedLessons} = useAppSelector(
     state => state.learn,
   );
@@ -89,7 +91,9 @@ export default function Lesson({route, navigation}) {
   };
   const renderHeader = (section, index: number, isActive: boolean) => {
     const isCompleted = () => {
-      return !!completedLessons.find(cl => cl.lesson_id === section.id);
+      return !!completedLessons.find(
+        cl => String(cl.lesson_id) === String(section.id),
+      );
     };
     return (
       <View style={styles.accordHeader}>
@@ -127,18 +131,25 @@ export default function Lesson({route, navigation}) {
       {!loading && (
         <ScrollView style={styles.scrollContainer}>
           <Image
-            source={{
-              uri: courseDetail?.thumbnailUrl,
-            }}
+            source={
+              courseDetail?.thumbnailUrl
+                ? {
+                    uri: courseDetail.thumbnailUrl,
+                  }
+                : undefined
+            }
             style={styles.image}
             //   resizeMethod="scale"
             resizeMode="cover"
           />
           <View>
-            <RenderHtml
-              source={{html: courseDetail?.description}}
-              baseStyle={styles.descriptionText}
-            />
+            {courseDetail?.description ? (
+              <RenderHtml
+                source={{html: courseDetail.description}}
+                baseStyle={styles.descriptionText}
+                contentWidth={width}
+              />
+            ) : null}
             <Accordion
               sections={lessons}
               activeSections={activeSections}

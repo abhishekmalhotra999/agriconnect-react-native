@@ -7,9 +7,16 @@ import { COLORS, FONTS, FONT_SIZES } from '../../themes/styles';
 interface SearchBarProps {
   placeholder: string;
   hasFilter?: boolean;
+  value?: string;
+  onChangeText?: (value: string) => void;
 }
 
-const SearchBar: React.FC<SearchBarProps> = ({ placeholder, hasFilter=false }) => {
+const SearchBar: React.FC<SearchBarProps> = ({
+  placeholder,
+  hasFilter = false,
+  value,
+  onChangeText,
+}) => {
   return (
     <View style={styles.mainContainer}>
       <View style={styles.container}>
@@ -18,6 +25,8 @@ const SearchBar: React.FC<SearchBarProps> = ({ placeholder, hasFilter=false }) =
           style={styles.input}
           placeholder={placeholder}
           placeholderTextColor="#888"
+          value={value}
+          onChangeText={onChangeText}
         />
         {hasFilter &&
           <Image source={filterIcon} style={styles.icon} />

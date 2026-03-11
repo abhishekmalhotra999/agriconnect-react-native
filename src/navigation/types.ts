@@ -15,7 +15,18 @@ export type CustomerStackParamList = {
   Signup: undefined;
   Otp: { user: User };
   PersonalDetail: undefined;
-  FirmDetail: undefined;
+  FirmDetail: {
+    accountType: string;
+    personalDetails?: {
+      email: string;
+      address: string;
+      password: string;
+      confirmPassword: string;
+      phone: string;
+      name: string;
+      professionType: string;
+    };
+  };
   Home: {
     registerScrollRef: (ref: React.RefObject<ScrollView>) => void;
   };
@@ -30,6 +41,10 @@ export type CustomerStackParamList = {
   Cart: undefined;
   Products: undefined;
   ProductDetails: { product: Product };
+  Services: undefined;
+  ServiceDetails: { product: Product };
+  MyServiceRequests: undefined;
+  ServiceRequestDetails: { order: Order };
 };
 
 export type VendorStackParamList = {
@@ -38,6 +53,7 @@ export type VendorStackParamList = {
   OrderDetails: { order: Order };
   MyProducts: undefined;
   MyProductDetails: { product: Product };
+  ManageMyProduct: { product?: Product };
 }
 
 // Auth navigation props
@@ -55,6 +71,7 @@ export type OrdersScreenNavigationProp = StackNavigationProp<VendorStackParamLis
 export type OrderDetailsScreenNavigationProp = StackNavigationProp<VendorStackParamList, 'OrderDetails'>;
 export type MyProductsScreenNavigationProp = StackNavigationProp<VendorStackParamList, 'MyProducts'>;
 export type MyProductDetailsScreenNavigationProp = StackNavigationProp<VendorStackParamList, 'MyProductDetails'>;
+export type ManageMyProductScreenNavigationProp = StackNavigationProp<VendorStackParamList, 'ManageMyProduct'>;
 
 
 // Customer navigation props
@@ -70,6 +87,10 @@ export type CartScreenNavigationProp = StackNavigationProp<CustomerStackParamLis
 export type InAppNotificationsScreenNavigationProp = StackNavigationProp<CustomerStackParamList, 'InAppNotifications'>;
 export type ProductsScreenNavigationProp = StackNavigationProp<CustomerStackParamList, 'Products'>;
 export type ProductDetailsScreenNavigationProp = StackNavigationProp<CustomerStackParamList, 'ProductDetails'>;
+export type ServicesScreenNavigationProp = StackNavigationProp<CustomerStackParamList, 'Services'>;
+export type ServiceDetailsScreenNavigationProp = StackNavigationProp<CustomerStackParamList, 'ServiceDetails'>;
+export type MyServiceRequestsScreenNavigationProp = StackNavigationProp<CustomerStackParamList, 'MyServiceRequests'>;
+export type ServiceRequestDetailsScreenNavigationProp = StackNavigationProp<CustomerStackParamList, 'ServiceRequestDetails'>;
 
 
 // Auth route props
@@ -87,6 +108,7 @@ export type OrdersScreenRouteProp = RouteProp<VendorStackParamList, 'Orders'>;
 export type OrderDetailsScreenRouteProp = RouteProp<VendorStackParamList, 'OrderDetails'>;
 export type MyProductsScreenRouteProp = RouteProp<VendorStackParamList, 'MyProducts'>;
 export type MyProductDetailsScreenRouteProp = RouteProp<VendorStackParamList, 'MyProductDetails'>;
+export type ManageMyProductScreenRouteProp = RouteProp<VendorStackParamList, 'ManageMyProduct'>;
 
 // Customer route props
 export type HomeScreenRouteProp = RouteProp<CustomerStackParamList, 'Home'>;
@@ -101,6 +123,10 @@ export type CartScreenRouteProp = RouteProp<CustomerStackParamList, 'Cart'>;
 export type InAppNotificationsScreenRouteProp = RouteProp<CustomerStackParamList, 'InAppNotifications'>;
 export type ProductsScreenRouteProp = RouteProp<CustomerStackParamList, 'Products'>;
 export type ProductDetailsScreenRouteProp = RouteProp<CustomerStackParamList, 'ProductDetails'>;
+export type ServicesScreenRouteProp = RouteProp<CustomerStackParamList, 'Services'>;
+export type ServiceDetailsScreenRouteProp = RouteProp<CustomerStackParamList, 'ServiceDetails'>;
+export type MyServiceRequestsScreenRouteProp = RouteProp<CustomerStackParamList, 'MyServiceRequests'>;
+export type ServiceRequestDetailsScreenRouteProp = RouteProp<CustomerStackParamList, 'ServiceRequestDetails'>;
 
 // ############ Auth ############## //
 export interface OnBoardingScreenProps {
@@ -164,6 +190,11 @@ export interface MyProductDetailsScreenProps {
   route: MyProductDetailsScreenRouteProp;
 }
 
+export interface ManageMyProductScreenProps {
+  navigation: ManageMyProductScreenNavigationProp;
+  route: ManageMyProductScreenRouteProp;
+}
+
 // ############ Customer ############## //
 export interface HomeScreenProps {
   navigation: HomeScreenNavigationProp;
@@ -203,6 +234,26 @@ export interface ProductsScreenProps {
 export interface ProductDetailsScreenProps {
   navigation: ProductDetailsScreenNavigationProp;
   route: ProductDetailsScreenRouteProp;
+}
+
+export interface ServicesScreenProps {
+  navigation: ServicesScreenNavigationProp;
+  route: ServicesScreenRouteProp;
+}
+
+export interface ServiceDetailsScreenProps {
+  navigation: ServiceDetailsScreenNavigationProp;
+  route: ServiceDetailsScreenRouteProp;
+}
+
+export interface MyServiceRequestsScreenProps {
+  navigation: MyServiceRequestsScreenNavigationProp;
+  route: MyServiceRequestsScreenRouteProp;
+}
+
+export interface ServiceRequestDetailsScreenProps {
+  navigation: ServiceRequestDetailsScreenNavigationProp;
+  route: ServiceRequestDetailsScreenRouteProp;
 }
 
 export interface ProfileScreenProps {
