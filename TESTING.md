@@ -78,7 +78,7 @@ If backend tests fail due database connectivity, run `npm run test:backend:setup
 Automated gates completed:
 
 - RN full suite: `npm run test:rn -- --watch=false`
-  - Result: `14/14` suites passed, `55/55` tests passed.
+  - Result: `14/14` suites passed, `56/56` tests passed.
 - Backend marketplace suites:
   - `tests/api/roleGuards.marketplace.test.js`
   - `tests/api/listings.interactions.test.js`
@@ -96,3 +96,11 @@ Manual smoke items still recommended before release:
 1. Device smoke: Home -> Marketplace -> Product Detail actions -> Seller list quick toggle/edit round-trip.
 2. Validate deep links for `tel:` and `wa.me` on target Android/iOS devices.
 3. Confirm seller status edge cases (`pending/rejected`) display proper server error text during publish toggles.
+
+## Deferred (Intentionally Out of Scope for Parity)
+
+These items were deferred to keep strict parity scope and avoid feature creep:
+
+1. New non-web analytics/insights modules.
+2. Additional workflow redesigns not present in current web references.
+3. Expanding trusted filter semantics beyond current web-defined behavior.

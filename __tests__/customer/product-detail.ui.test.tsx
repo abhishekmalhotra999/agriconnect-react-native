@@ -1,6 +1,6 @@
 import React from 'react';
 import {Linking, Share, Text, TouchableOpacity, View} from 'react-native';
-import {fireEvent, render, waitFor} from '@testing-library/react-native';
+import {act, fireEvent, render, waitFor} from '@testing-library/react-native';
 import ProductDetails from '../../src/screens/Customer/Products/show';
 
 jest.mock('../../src/utils/util', () => ({
@@ -152,7 +152,9 @@ describe('product details screen parity actions', () => {
     });
 
     fireEvent.changeText(screen.getByTestId('review-comment-input'), 'Nice product');
-    fireEvent.press(screen.getByTestId('review-submit'));
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('review-submit'));
+    });
 
     await waitFor(() => {
       expect(createMarketplaceProductReview).toHaveBeenCalledWith(11, {

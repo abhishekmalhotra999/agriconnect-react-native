@@ -7,6 +7,7 @@ import {
   Platform,
   ActivityIndicator,
   TouchableOpacity,
+  Pressable,
   TextInput,
   Share,
   Linking,
@@ -277,7 +278,7 @@ const ProductDetails: React.FC<ProductDetailsScreenProps> = ({ navigation, route
             placeholder="Write a short review (optional)"
             multiline
           />
-          <TouchableOpacity
+          <Pressable
             testID="review-submit"
             style={styles.submitReviewButton}
             onPress={onSubmitReview}
@@ -285,7 +286,7 @@ const ProductDetails: React.FC<ProductDetailsScreenProps> = ({ navigation, route
             <Text style={styles.submitReviewText}>
               {submittingReview ? 'Submitting...' : 'Submit Review'}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
           {reviewLoading ? <ActivityIndicator color={COLORS.primary} style={styles.reviewLoader} /> : null}
           {reviews.length === 0 ? (
             <Text style={styles.emptyText}>No reviews yet.</Text>

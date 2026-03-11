@@ -1,4 +1,4 @@
-import {fireEvent, render, waitFor} from '@testing-library/react-native';
+import {act, fireEvent, render, waitFor} from '@testing-library/react-native';
 import React from 'react';
 import ManageMyProduct from '../../src/screens/Vendor/MyProducts/manage';
 import {
@@ -86,7 +86,9 @@ describe('manage product UI', () => {
     fireEvent.changeText(screen.getByPlaceholderText('Price (e.g. 100)'), '50');
     fireEvent.changeText(screen.getByPlaceholderText('Stock quantity'), '10');
 
-    fireEvent.press(screen.getByText('Publish'));
+    await act(async () => {
+      fireEvent.press(screen.getByText('Publish'));
+    });
 
     await waitFor(() => {
       expect(updateMarketplaceProduct).toHaveBeenCalledWith(
@@ -121,7 +123,9 @@ describe('manage product UI', () => {
     fireEvent.changeText(screen.getByPlaceholderText('Price (e.g. 100)'), '20');
     fireEvent.changeText(screen.getByPlaceholderText('Stock quantity'), '5');
 
-    fireEvent.press(screen.getByText('Save as Draft'));
+    await act(async () => {
+      fireEvent.press(screen.getByText('Save as Draft'));
+    });
 
     await waitFor(() => {
       expect(createMarketplaceProduct).toHaveBeenCalledWith(
