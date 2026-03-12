@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { COLORS, FONTS, FONT_SIZES } from '../../../themes/styles';
 import { normalize } from '../../../utils/util';
 import { Product } from '../../../models/product';
+import MarqueeText from '../../UI/MarqueeText';
 
 type ProductInfoProps = {
   product: Product;
@@ -12,7 +13,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
   return (
     <View style={styles.content}>
       <View style={styles.titleRow}>
-        <Text style={styles.title}>{product.name}</Text>
+        <MarqueeText text={product.name} textStyle={styles.title} />
         <Text style={styles.categoryBadge}>{product.category || 'General'}</Text>
       </View>
       

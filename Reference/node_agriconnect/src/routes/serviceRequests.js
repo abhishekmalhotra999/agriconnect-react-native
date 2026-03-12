@@ -4,7 +4,7 @@ const { ServiceRequest, ServiceListing, User } = require('../models');
 const { requireRoles } = require('../middleware/roleAuth');
 const { sendServiceRequestEmail } = require('../services/serviceRequestMailer');
 
-router.post('/', requireRoles(['customer']), async (req, res) => {
+router.post('/', requireRoles(['customer', 'farmer']), async (req, res) => {
     try {
         const { service_listing_id, requester_name, requester_phone, requester_email, message } = req.body;
 
@@ -60,7 +60,7 @@ router.post('/', requireRoles(['customer']), async (req, res) => {
     }
 });
 
-router.get('/mine', requireRoles(['customer']), async (req, res) => {
+router.get('/mine', requireRoles(['customer', 'farmer']), async (req, res) => {
     try {
         const rows = await ServiceRequest.findAll({
             where: { customer_user_id: req.appUser.id },

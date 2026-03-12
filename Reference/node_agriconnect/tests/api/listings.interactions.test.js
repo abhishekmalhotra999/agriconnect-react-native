@@ -295,4 +295,45 @@ describe('Marketplace and service listing interactions', () => {
         expect(requestRes.status).toBe(404);
         expect(String(requestRes.body.errors || '')).toMatch(/active service listing not found/i);
     });
+
+    test('farmer can submit and view own service requests', async () => {
+        const { user: technician, token: technicianToken } = await createUserWithRole('technician');
+        const { user: farmer, token: farmerToken } = await createUserWithRole('farmer');
+        cleanupUserIds.push(technician.id, farmer.id);
+
+        const listingRes = await request(app)
+            .post('/api/services/listings')
+            .set('Authorization', `Bearer ${technicianToken}`)
+            .send({
+                title: 'Drip Irrigation Maintenance',
+                description: 'On-site line checks and flow tuning',
+                service_area: 'Region West',
+                is_active: true,
+            });
+
+        expect(listingRes.status).toBe(201);
+        cleanupListingIds.push(listingRes.body.id);
+
+        const requestRes = await request(app)
+            .post('/api/services/requests')
+            .set('Authorization', `Bearer ${farmerToken}`)
+            .send({
+                service_listing_id: listingRes.body.id,
+                requester_name: farmer.name,
+                requester_phone: farmer.phone,
+                requester_email: farmer.email,
+                message: 'Need drip system maintenance before next planting cycle.',
+            });
+
+        expect(requestRes.status).toBe(201);
+        cleanupRequestIds.push(requestRes.body.id);
+        expect(String(requestRes.body.customer_user_id)).toBe(String(farmer.id));
+
+        const farmerMine = await request(app)
+            .get('/api/services/requests/mine')
+            .set('Authorization', `Bearer ${farmerToken}`);
+
+        expect(farmerMine.status).toBe(200);
+        expect(farmerMine.body.some((row) => String(row.id) === String(requestRes.body.id))).toBe(true);
+    });
 });

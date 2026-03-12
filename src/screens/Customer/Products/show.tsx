@@ -219,7 +219,7 @@ const ProductDetails: React.FC<ProductDetailsScreenProps> = ({ navigation, route
 
   return (
     <View style={[styles.container, { paddingBottom: bottomInsets(10)}]}>
-      <Header goBack={true} title="Product Details"/>
+      <Header goBack={true} title="Product Details" icons={false} />
       <ScrollView 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}

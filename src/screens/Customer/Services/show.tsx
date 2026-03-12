@@ -41,7 +41,6 @@ const ServiceDetails: React.FC<ServiceDetailsScreenProps> = ({
 }) => {
   const {product}: {product: Product} = route.params;
   const {user} = userContext();
-  const isCustomer = String(user?.accountType || '').toLowerCase() === 'customer';
   const [serviceDetail, setServiceDetail] = useState<Product>(product);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -158,11 +157,6 @@ const ServiceDetails: React.FC<ServiceDetailsScreenProps> = ({
       return;
     }
 
-    if (!isCustomer) {
-      setError('Only customer accounts can request this service.');
-      return;
-    }
-
     if (!requesterName.trim() || !requesterPhone.trim()) {
       setError('Name and phone are required.');
       return;
@@ -263,7 +257,13 @@ const ServiceDetails: React.FC<ServiceDetailsScreenProps> = ({
 
   return (
     <View style={[styles.container, {paddingBottom: bottomInsets(10)}]}>
-      <Header goBack title={serviceDetail.name} />
+      <Header
+        goBack={true}
+        title="Service Details"
+        icons={false}
+        showButtons={false}
+        otherTextStyle={{}}
+      />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}>
@@ -296,39 +296,34 @@ const ServiceDetails: React.FC<ServiceDetailsScreenProps> = ({
 
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Request This Service</Text>
-          {isCustomer ? (
-            <>
-              <TextInput
-                style={styles.textInput}
-                value={requesterName}
-                onChangeText={setRequesterName}
-                placeholder="Your name"
-              />
-              <TextInput
-                style={styles.textInput}
-                value={requesterPhone}
-                onChangeText={setRequesterPhone}
-                placeholder="Your phone"
-              />
-              <TextInput
-                style={styles.textInput}
-                value={requesterEmail}
-                onChangeText={setRequesterEmail}
-                placeholder="Your email (optional)"
-              />
-              <TextInput
-                style={[styles.textInput, styles.textArea]}
-                value={message}
-                onChangeText={setMessage}
-                placeholder="Describe your service need"
-                multiline
-              />
-            </>
-          ) : (
-            <Text style={styles.noteText}>
-              Only customer accounts can submit service requests.
-            </Text>
-          )}
+          <TextInput
+            style={styles.textInput}
+            value={requesterName}
+            onChangeText={setRequesterName}
+            placeholder="Your name"
+          />
+          <TextInput
+            style={styles.textInput}
+            value={requesterPhone}
+            onChangeText={setRequesterPhone}
+            placeholder="Your phone"
+          />
+          <TextInput
+            style={styles.textInput}
+            value={requesterEmail}
+            onChangeText={setRequesterEmail}
+            placeholder="Your email (optional)"
+          />
+          <TextInput
+            style={[styles.textInput, styles.textArea]}
+            value={message}
+            onChangeText={setMessage}
+            placeholder="Describe your service need"
+            multiline
+          />
+          <Text style={styles.noteText}>
+            Share your requirements and preferred timing. The provider will respond in My Requests.
+          </Text>
         </View>
 
         <View style={styles.sectionCard}>
@@ -402,13 +397,7 @@ const ServiceDetails: React.FC<ServiceDetailsScreenProps> = ({
       </ScrollView>
       <View style={[styles.row, styles.spacing]}>
         <CheckoutButton
-          label={
-            requesting
-              ? 'Submitting...'
-              : isCustomer
-              ? 'Send Request'
-              : 'Service Unavailable'
-          }
+          label={requesting ? 'Submitting...' : 'Send Request'}
           style={styles.requestButton}
           onPress={requestService}
         />
