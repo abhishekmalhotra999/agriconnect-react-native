@@ -564,7 +564,7 @@ const VendorBottomTabNavigation: React.FC = () => {
           tabBarIcon: ({focused}) => (
             <Image
               source={focused ? userColorIcon : userIcon}
-              style={styles.icon}
+              style={[styles.icon, !focused && styles.sellerIconInactive]}
             />
           ),
         }}
@@ -735,7 +735,10 @@ const BottomTabNavigation: React.FC<{
         name="Learn"
         component={withTabTransition(LearnStackNavigation)}
         listeners={({navigation}) => ({
-          tabPress: e => {
+          tabPress: () => {
+            // Always bring users back to the Learn overview when they tap the Learn tab.
+            navigation.navigate('Learn', {screen: 'LearnStack'});
+
             const isAlreadyFocused = navigation.isFocused();
             if (isAlreadyFocused) {
               scrollToTop('Learn');
@@ -892,7 +895,7 @@ const BottomTabNavigation: React.FC<{
               tabBarIcon: ({focused}) => (
                 <Image
                   source={focused ? userColorIcon : userIcon}
-                  style={styles.icon}
+                  style={[styles.icon, !focused && styles.sellerIconInactive]}
                 />
               ),
               tabBarStyle: ['Profile', 'MyAccount'].includes(routeName)
@@ -1063,6 +1066,9 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.XSMALL,
     color: COLORS.grey,
     // top: 14,
+  },
+  sellerIconInactive: {
+    tintColor: COLORS.grey,
   },
 });
 

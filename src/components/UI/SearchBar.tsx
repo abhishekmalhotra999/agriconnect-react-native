@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TextInput, StyleSheet, Image, Platform } from 'react-native';
+import { View, TextInput, StyleSheet, Image, Platform, Pressable } from 'react-native';
 import { searchIcon, filterIcon } from '../../constants/images';
 import { normalize } from '../../utils/util';
 import { COLORS, FONTS, FONT_SIZES } from '../../themes/styles';
@@ -9,6 +9,8 @@ interface SearchBarProps {
   hasFilter?: boolean;
   value?: string;
   onChangeText?: (value: string) => void;
+  onFilterPress?: () => void;
+  isFilterActive?: boolean;
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({
@@ -16,6 +18,8 @@ const SearchBar: React.FC<SearchBarProps> = ({
   hasFilter = false,
   value,
   onChangeText,
+  onFilterPress,
+  isFilterActive = false,
 }) => {
   return (
     <View style={styles.mainContainer}>
@@ -28,9 +32,14 @@ const SearchBar: React.FC<SearchBarProps> = ({
           value={value}
           onChangeText={onChangeText}
         />
-        {hasFilter &&
-          <Image source={filterIcon} style={styles.icon} />
-        }
+        {hasFilter ? (
+          <Pressable
+            hitSlop={10}
+            onPress={onFilterPress}
+            style={[styles.filterButton, isFilterActive && styles.filterButtonActive]}>
+            <Image source={filterIcon} style={styles.icon} />
+          </Pressable>
+        ) : null}
       </View>
     </View>
   );
@@ -66,6 +75,13 @@ const styles = StyleSheet.create({
     height: 18,
     resizeMode: 'contain',
     paddingLeft: 10,
+  },
+  filterButton: {
+    borderRadius: 12,
+    padding: normalize(2),
+  },
+  filterButtonActive: {
+    backgroundColor: COLORS.primaryLight,
   },
 });
 

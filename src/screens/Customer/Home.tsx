@@ -25,6 +25,17 @@ import {getMarketplaceProducts} from '../../api/marketplace.api';
 import {getServiceListings} from '../../api/services.api';
 import Loading from '../../components/UI/Loading';
 
+const searchScopes = [
+  'All',
+  'Marketplace',
+  'Services',
+  'Learning',
+  'Recent',
+  'Quick Actions',
+] as const;
+
+type SearchScope = (typeof searchScopes)[number];
+
 const campaigns = [
   {
     id: 'produce',
@@ -65,6 +76,9 @@ const Home: React.FC<HomeScreenProps> = ({ navigation }) => {
   >([]);
   const [marketplaceHighlights, setMarketplaceHighlights] = useState<Product[]>([]);
   const [serviceHighlights, setServiceHighlights] = useState<Product[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearchFilters, setShowSearchFilters] = useState(false);
+  const [activeSearchScope, setActiveSearchScope] = useState<SearchScope>('All');
   const courses = useAppSelector(state => state.learn.courses);
   const lessonsProgress = useAppSelector(state => state.learn.lessonsProgress);
 
@@ -239,6 +253,75 @@ const Home: React.FC<HomeScreenProps> = ({ navigation }) => {
 
   const greetingName = String(user?.name || '').trim() || 'Farmer';
 
+  const searchResults = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) {
+      return [];
+    }
+
+    const items: Array<{
+      id: string;
+      scope: Exclude<SearchScope, 'All'>;
+      title: string;
+      subtitle: string;
+      onPress: () => void;
+    }> = [
+      ...quickActions.map(item => ({
+        id: `quick-${item.title}`,
+        scope: 'Quick Actions' as const,
+        title: item.title,
+        subtitle: item.subtitle,
+        onPress: item.action,
+      })),
+      ...marketplaceHighlights.map(item => ({
+        id: `market-${item.id}`,
+        scope: 'Marketplace' as const,
+        title: item.name,
+        subtitle: `${item.category || 'Product'} ${item.discountedPrice ? `- ${item.discountedPrice}` : ''}`.trim(),
+        onPress: () => navigation.navigate('ProductDetails', {product: item}),
+      })),
+      ...serviceHighlights.map(item => ({
+        id: `service-${item.id}`,
+        scope: 'Services' as const,
+        title: item.name,
+        subtitle: item.serviceArea || 'Service listing',
+        onPress: () => navigation.navigate('ServiceDetails', {product: item}),
+      })),
+      ...courses.map(course => ({
+        id: `course-${course.id}`,
+        scope: 'Learning' as const,
+        title: course.title,
+        subtitle: course.description || 'Course',
+        onPress: () => navigation.navigate('Learn'),
+      })),
+      ...recentItems.map(item => ({
+        id: `recent-${item.type || 'item'}-${item.id}`,
+        scope: 'Recent' as const,
+        title: item.title || 'Untitled',
+        subtitle: item.subtitle || String(item.type || 'recent activity'),
+        onPress: () => openRecentItem(item),
+      })),
+    ];
+
+    return items.filter(item => {
+      if (activeSearchScope !== 'All' && item.scope !== activeSearchScope) {
+        return false;
+      }
+
+      const haystack = `${item.title} ${item.subtitle} ${item.scope}`.toLowerCase();
+      return haystack.indexOf(query) >= 0;
+    });
+  }, [
+    activeSearchScope,
+    courses,
+    marketplaceHighlights,
+    navigation,
+    quickActions,
+    recentItems,
+    searchQuery,
+    serviceHighlights,
+  ]);
+
   return (
     <View style={styles.container}>
     <Header />
@@ -248,10 +331,75 @@ const Home: React.FC<HomeScreenProps> = ({ navigation }) => {
       showsVerticalScrollIndicator={false}
       headerContent={(
         <>
-        <SearchBar hasFilter={true} placeholder="Search.." />
+        <SearchBar
+          hasFilter={true}
+          placeholder="Search.."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          onFilterPress={() => setShowSearchFilters(prev => !prev)}
+          isFilterActive={showSearchFilters || activeSearchScope !== 'All'}
+        />
         </>
       )}
       >
+        {showSearchFilters ? (
+          <View style={styles.searchFilterWrap}>
+            <FlatList
+              horizontal
+              data={searchScopes}
+              keyExtractor={item => item}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.searchFilterListContent}
+              renderItem={({item: scope}) => (
+                <Pressable
+                  style={[
+                    styles.searchFilterChip,
+                    activeSearchScope === scope && styles.searchFilterChipActive,
+                  ]}
+                  onPress={() => setActiveSearchScope(scope)}>
+                  <Text
+                    style={[
+                      styles.searchFilterChipText,
+                      activeSearchScope === scope && styles.searchFilterChipTextActive,
+                    ]}>
+                    {scope}
+                  </Text>
+                </Pressable>
+              )}
+            />
+          </View>
+        ) : null}
+
+        {searchQuery.trim() ? (
+          <View style={styles.searchResultsSection}>
+            <View style={styles.discoveryHeader}>
+              <Text style={styles.sectionHeading}>Search Results</Text>
+              <Text style={styles.resultCountText}>{searchResults.length} found</Text>
+            </View>
+            <View style={styles.sectionSurface}>
+              {searchResults.length === 0 ? (
+                <Text style={styles.emptyRecentText}>No matches in selected scope.</Text>
+              ) : (
+                searchResults.slice(0, 10).map(item => (
+                  <Pressable
+                    key={item.id}
+                    style={styles.searchResultCard}
+                    onPress={item.onPress}>
+                    <View style={styles.highlightMetaWrap}>
+                      <Text style={styles.highlightPill}>{item.scope}</Text>
+                      <Text style={styles.highlightTitle}>{item.title}</Text>
+                      <Text numberOfLines={1} style={styles.highlightSubtitle}>
+                        {item.subtitle}
+                      </Text>
+                    </View>
+                    <Text style={styles.highlightArrow}>></Text>
+                  </Pressable>
+                ))
+              )}
+            </View>
+          </View>
+        ) : null}
+
         <View style={styles.bannerSection}>
           <FlatList
             data={campaigns}
@@ -432,6 +580,56 @@ const styles = StyleSheet.create({
   bannerSection: {
     marginTop: normalize(2),
     marginBottom: normalize(10),
+  },
+  searchFilterWrap: {
+    marginTop: normalize(6),
+    marginBottom: normalize(10),
+  },
+  searchFilterListContent: {
+    marginHorizontal: normalize(16),
+    paddingRight: normalize(12),
+  },
+  searchFilterChip: {
+    borderWidth: 1,
+    borderColor: COLORS.lightGrey,
+    borderRadius: normalize(14),
+    backgroundColor: COLORS.white,
+    paddingHorizontal: normalize(10),
+    paddingVertical: normalize(4),
+    marginRight: normalize(8),
+  },
+  searchFilterChipActive: {
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primaryLight,
+  },
+  searchFilterChipText: {
+    color: COLORS.grey,
+    fontFamily: FONTS.medium,
+    fontSize: FONT_SIZES.XSMALL,
+  },
+  searchFilterChipTextActive: {
+    color: COLORS.primary,
+  },
+  searchResultsSection: {
+    paddingHorizontal: normalize(16),
+    marginBottom: normalize(10),
+    marginTop: normalize(2),
+  },
+  searchResultCard: {
+    borderWidth: 1,
+    borderColor: COLORS.lightGrey,
+    borderRadius: normalize(10),
+    padding: normalize(10),
+    backgroundColor: COLORS.white,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: normalize(8),
+  },
+  resultCountText: {
+    color: COLORS.grey,
+    fontFamily: FONTS.regular,
+    fontSize: FONT_SIZES.XSMALL,
   },
   bannerListContent: {
     paddingHorizontal: normalize(16),

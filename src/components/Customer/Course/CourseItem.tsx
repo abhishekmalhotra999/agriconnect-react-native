@@ -10,7 +10,7 @@ import {Course} from '../../../models/Course';
 import {COLORS, FONTS, FONT_SIZES} from '../../../themes/styles';
 import {normalize} from '../../../utils/util';
 import {useNavigation} from '@react-navigation/native';
-import {listItem1} from '../../../constants/images';
+import {listItem1, listItem2, listItem3} from '../../../constants/images';
 import {useAppSelector} from '../../../store/storage';
 
 interface CourseProps {
@@ -22,13 +22,19 @@ const CourseItem: React.FC<CourseProps> = ({item}) => {
   const [imageFailed, setImageFailed] = useState(false);
   const lessonsProgress = useAppSelector(state => state.learn.lessonsProgress);
 
+  const fallbackSource = useMemo(() => {
+    const imageSet = [listItem1, listItem2, listItem3];
+    const index = Math.abs(Number(item.id) || 0) % imageSet.length;
+    return imageSet[index];
+  }, [item.id]);
+
   const imageSource = useMemo(() => {
     if (!imageFailed && item.thumbnailUrl) {
       return {uri: item.thumbnailUrl};
     }
 
-    return listItem1;
-  }, [imageFailed, item.thumbnailUrl]);
+    return fallbackSource;
+  }, [fallbackSource, imageFailed, item.thumbnailUrl]);
 
   const courseProgress = useMemo(
     () =>
