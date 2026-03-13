@@ -1,4 +1,4 @@
-import React, {useRef, useEffect, useState} from 'react';
+import React, {useRef, useEffect, useState, useCallback} from 'react';
 import {
   StyleSheet,
   View,
@@ -40,6 +40,21 @@ const MyProducts: React.FC<MyProductsScreenProps> = ({ navigation }) => {
   const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft'>('all');
   const [togglingProductId, setTogglingProductId] = useState<number | string | null>(null);
 
+  const loadProducts = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const finalResult = isTechnician
+        ? await getMyServiceListings()
+        : await getMyMarketplaceProducts();
+      setProducts(finalResult);
+    } catch {
+      setError('Unable to load your products right now.');
+    } finally {
+      setLoading(false);
+    }
+  }, [isTechnician]);
+
   function editProduct(product: Product) {
     navigation.navigate('MyProductDetails', { product })
   }
@@ -53,36 +68,9 @@ const MyProducts: React.FC<MyProductsScreenProps> = ({ navigation }) => {
   }, [registerScrollRef]);
 
   useFocusEffect(
-    React.useCallback(() => {
-      let mounted = true;
-
-      const loadProducts = async () => {
-        try {
-          setLoading(true);
-          setError('');
-          const finalResult = isTechnician
-            ? await getMyServiceListings()
-            : await getMyMarketplaceProducts();
-          if (mounted) {
-            setProducts(finalResult);
-          }
-        } catch (apiError) {
-          if (mounted) {
-            setError('Unable to load your products right now.');
-          }
-        } finally {
-          if (mounted) {
-            setLoading(false);
-          }
-        }
-      };
-
+    useCallback(() => {
       loadProducts();
-
-      return () => {
-        mounted = false;
-      };
-    }, [isTechnician]),
+    }, [loadProducts]),
   );
 
   const visibleProducts = products.filter(item => {
@@ -150,6 +138,8 @@ const MyProducts: React.FC<MyProductsScreenProps> = ({ navigation }) => {
       <AnimatedHeaderScrollView
         ref={scrollViewRef}
         headerHeight={normalize(50)}
+        onRefresh={loadProducts}
+        refreshMessage={isTechnician ? 'Refreshing services' : 'Refreshing products'}
         headerContent={(
           <>
           <SearchBar

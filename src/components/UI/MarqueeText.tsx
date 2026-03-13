@@ -3,6 +3,7 @@ import {
   Animated,
   Easing,
   LayoutChangeEvent,
+  Text,
   StyleProp,
   StyleSheet,
   TextStyle,
@@ -72,8 +73,13 @@ const MarqueeText: React.FC<MarqueeTextProps> = ({
     setContainerWidth(event.nativeEvent.layout.width);
   };
 
-  const onTextLayout = (event: LayoutChangeEvent) => {
-    setTextWidth(event.nativeEvent.layout.width);
+  const onDisplayTextLayout = (_event: LayoutChangeEvent) => {};
+
+  const onMeasureTextLayout = (event: LayoutChangeEvent) => {
+    const measured = event.nativeEvent.layout.width;
+    if (measured > 0) {
+      setTextWidth(measured);
+    }
   };
 
   return (
@@ -82,10 +88,15 @@ const MarqueeText: React.FC<MarqueeTextProps> = ({
       onLayout={onContainerLayout}>
       <Animated.Text
         numberOfLines={1}
-        onLayout={onTextLayout}
+        onLayout={onDisplayTextLayout}
         style={[textStyle, shouldAnimate ? {transform: [{translateX}]} : null]}>
         {text}
       </Animated.Text>
+      <Text
+        onLayout={onMeasureTextLayout}
+        style={[styles.measureText, textStyle]}>
+        {text}
+      </Text>
     </View>
   );
 };
@@ -94,6 +105,11 @@ const styles = StyleSheet.create({
   container: {
     overflow: 'hidden',
     width: '100%',
+  },
+  measureText: {
+    position: 'absolute',
+    opacity: 0,
+    left: -9999,
   },
 });
 

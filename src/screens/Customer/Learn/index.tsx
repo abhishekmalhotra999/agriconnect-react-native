@@ -1,5 +1,5 @@
-import React, {useRef, useEffect} from 'react';
-import {StyleSheet, ScrollView, Platform} from 'react-native';
+import React, {useRef, useEffect, useCallback, useState} from 'react';
+import {StyleSheet, ScrollView, Platform, RefreshControl} from 'react-native';
 import {LearnScreenProps} from '../../../navigation/types';
 import Header from '../../../containers/header';
 import {COLORS} from '../../../themes/styles';
@@ -17,6 +17,7 @@ import {
 } from '../../../api/learn.api';
 import learnAction from '../../../store/slices/learn.slice';
 import {useAppDispatch, useAppSelector} from '../../../store/storage';
+import Loading from '../../../components/UI/Loading';
 
 const Learn: React.FC<LearnScreenProps> = ({navigation}) => {
   useStatusBarStyle('dark-content', 'light-content');
@@ -26,15 +27,13 @@ const Learn: React.FC<LearnScreenProps> = ({navigation}) => {
   // const {user} = userContext();
   const dispatch = useAppDispatch();
   const authToken = useAppSelector(state => state.auth.authToken);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     registerScrollRef('Learn', scrollViewRef);
   }, [registerScrollRef]);
 
-  useEffect(() => {
-    console.log('fetcing all courses');
-
-    const fetchAllCourseData = async () => {
+  const fetchAllCourseData = useCallback(async () => {
       try {
         const courses = await getAllCourses(authToken);
         dispatch(learnAction.saveAllCourses(courses));
@@ -73,11 +72,27 @@ const Learn: React.FC<LearnScreenProps> = ({navigation}) => {
       } catch (error) {
         console.log(error);
       }
-    };
+    }, [authToken, dispatch]);
+
+  useEffect(() => {
+    console.log('fetcing all courses');
     if (authToken) {
-      fetchAllCourseData(authToken);
+      fetchAllCourseData();
     }
-  }, [authToken]);
+  }, [authToken, fetchAllCourseData]);
+
+  const onRefresh = useCallback(async () => {
+    if (!authToken) {
+      return;
+    }
+
+    setRefreshing(true);
+    try {
+      await fetchAllCourseData();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [authToken, fetchAllCourseData]);
 
   return (
     <>
@@ -86,7 +101,11 @@ const Learn: React.FC<LearnScreenProps> = ({navigation}) => {
       <ScrollView
         ref={scrollViewRef}
         style={styles.container}
-        contentContainerStyle={styles.bottomSpacing}>
+        contentContainerStyle={styles.bottomSpacing}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }>
+        <Loading visible={refreshing} inline message="Refreshing learning data" />
         <AdsList />
         <Plan />
         <GroupSession />

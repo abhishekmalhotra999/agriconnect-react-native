@@ -20,12 +20,13 @@ import {COLORS, FONTS, FONT_SIZES} from '../../themes/styles';
 import useStatusBarStyle from '../../hooks/useStatusBarStyle';
 import {
   getUserNotifications,
-  markAllNotificationsAsRead,
+  markNotificationAsRead,
   UserNotification,
 } from '../../api/preferences.api';
 
 type UINotification = {
   id: string;
+  rawId: string;
   avatar: ImageSourcePropType;
   name: string;
   message: string;
@@ -72,6 +73,9 @@ const toUiNotification = (
 
   return {
     id: String(notification.id || `${index}-${title}`),
+    rawId: notification.id === undefined || notification.id === null
+      ? ''
+      : String(notification.id),
     avatar: avatarPool[index % avatarPool.length],
     name: title,
     message,
@@ -104,11 +108,6 @@ const Notifications: React.FC<InAppNotificationsScreenProps> = () => {
 
       setRawNotifications(sorted);
       setNotifications(sorted.map(toUiNotification));
-
-      const hasUnread = sorted.some(item => !(item.read || item.isRead));
-      if (hasUnread) {
-        await markAllNotificationsAsRead(sorted);
-      }
     } catch (error) {
       setErrorMessage('Unable to load notifications right now. Pull to refresh.');
     } finally {
@@ -130,6 +129,34 @@ const Notifications: React.FC<InAppNotificationsScreenProps> = () => {
     () => rawNotifications.filter(item => !(item.read || item.isRead)).length,
     [rawNotifications],
   );
+
+  const handleNotificationPress = useCallback(async (notification: UINotification) => {
+    if (!notification.isNew || !notification.rawId) {
+      return;
+    }
+
+    setNotifications(prev =>
+      prev.map(item =>
+        item.id === notification.id
+          ? {...item, isNew: false}
+          : item,
+      ),
+    );
+
+    setRawNotifications(prev =>
+      prev.map(item =>
+        String(item.id || '') === notification.rawId
+          ? {...item, read: true, isRead: true}
+          : item,
+      ),
+    );
+
+    try {
+      await markNotificationAsRead(notification.rawId);
+    } catch (error) {
+      // Keep optimistic UX while retry becomes available via pull-to-refresh.
+    }
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -162,6 +189,7 @@ const Notifications: React.FC<InAppNotificationsScreenProps> = () => {
       ) : (
         <NotificationList
           notifications={notifications}
+          onNotificationPress={handleNotificationPress}
           // Keep pull-to-refresh available for near real-time admin announcements.
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />

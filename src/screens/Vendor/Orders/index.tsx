@@ -1,4 +1,4 @@
-import React, {useMemo, useState} from 'react';
+import React, {useMemo, useState, useCallback} from 'react';
 import {ActivityIndicator, StyleSheet, View} from 'react-native';
 import { OrdersScreenProps } from '../../../navigation/types';
 import Header from '../../../containers/header';
@@ -48,40 +48,28 @@ const Orders: React.FC<OrdersScreenProps> = ({ navigation }) => {
     '';
   const isTechnician = normalizedRole === 'technician';
 
+  const loadOrders = useCallback(async () => {
+    if (!isTechnician) {
+      setOrders([]);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError('');
+      const result = await getServiceRequestsForTechnician();
+      setOrders(result);
+    } catch (loadError: any) {
+      setError(loadError?.message || 'Unable to load requests.');
+    } finally {
+      setLoading(false);
+    }
+  }, [isTechnician]);
+
   useFocusEffect(
-    React.useCallback(() => {
-      let mounted = true;
-
-      const loadOrders = async () => {
-        if (!isTechnician) {
-          setOrders([]);
-          return;
-        }
-
-        try {
-          setLoading(true);
-          setError('');
-          const result = await getServiceRequestsForTechnician();
-          if (mounted) {
-            setOrders(result);
-          }
-        } catch (loadError: any) {
-          if (mounted) {
-            setError(loadError?.message || 'Unable to load requests.');
-          }
-        } finally {
-          if (mounted) {
-            setLoading(false);
-          }
-        }
-      };
-
+    useCallback(() => {
       loadOrders();
-
-      return () => {
-        mounted = false;
-      };
-    }, [isTechnician]),
+    }, [loadOrders]),
   );
 
   const filteredOrders = useMemo(() => {
@@ -128,6 +116,8 @@ const Orders: React.FC<OrdersScreenProps> = ({ navigation }) => {
       <Header />
       <AnimatedHeaderScrollView 
         headerHeight={headerHeight()}
+        onRefresh={loadOrders}
+        refreshMessage="Refreshing requests"
         headerContent={(
           <>
           <SearchBar

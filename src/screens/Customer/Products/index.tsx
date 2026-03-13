@@ -247,6 +247,8 @@ const Products: React.FC<ProductsScreenProps> = ({ navigation }) => {
       testID="products-scroll"
       ref={scrollViewRef}
       headerHeight={normalize(50)}
+      onRefresh={loadProducts}
+      refreshMessage="Refreshing products"
       onMomentumScrollEnd={onMomentumScrollEnd}
       headerContent={(
         <>

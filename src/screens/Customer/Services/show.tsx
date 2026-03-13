@@ -18,9 +18,9 @@ import {bottomInsets, normalize} from '../../../utils/util';
 import {COLORS, FONTS, FONT_SIZES} from '../../../themes/styles';
 import {Product} from '../../../models/Product';
 import ImageSlider from '../../../components/UI/ImageSlider';
-import ProductInfo from '../../../components/Customer/Product/ProductInfo';
 import CheckoutButton from '../../../components/Customer/Cart/CheckoutButton';
 import ErrorText from '../../../components/UI/ErrorText';
+import MarqueeText from '../../../components/UI/MarqueeText';
 import {
   createServiceListingReview,
   createServiceRequest,
@@ -277,7 +277,32 @@ const ServiceDetails: React.FC<ServiceDetailsScreenProps> = ({
           autoplay
           sliderBoxStyle={styles.sliderWrapper}
         />
-        <ProductInfo product={serviceDetail} />
+
+        <View style={styles.summaryCard}>
+          <MarqueeText text={serviceDetail.name} textStyle={styles.serviceTitle} />
+          <View style={styles.summaryMetaRow}>
+            <Text style={styles.categoryBadge}>Service</Text>
+            <Text style={styles.areaBadge} numberOfLines={1}>
+              {serviceDetail.serviceArea || 'Area not specified'}
+            </Text>
+          </View>
+
+          <View style={styles.availabilityRow}>
+            <Text style={styles.inStockText}>
+              {serviceDetail.inStock ? 'Available Now' : 'Currently Unavailable'}
+            </Text>
+            <Text style={styles.reviewSummary}>
+              {serviceDetail.rating.toFixed(1)} ({serviceDetail.ratingCount} reviews)
+            </Text>
+          </View>
+
+          <View style={styles.descriptionBlock}>
+            <Text style={styles.descriptionHeading}>Description</Text>
+            <Text style={styles.descriptionText}>
+              {serviceDetail.description || 'No description available yet.'}
+            </Text>
+          </View>
+        </View>
 
         <View style={styles.actionRow}>
           <TouchableOpacity onPress={onToggleSaved} style={styles.actionButtonPrimary}>
@@ -386,8 +411,10 @@ const ServiceDetails: React.FC<ServiceDetailsScreenProps> = ({
                 key={String(item.id)}
                 style={styles.relatedItem}
                 onPress={() => navigation.push('ServiceDetails', {product: item})}>
-                <Text style={styles.relatedTitle}>{item.name}</Text>
-                <Text style={styles.relatedMeta}>
+                <Text style={styles.relatedTitle} numberOfLines={1}>
+                  {item.name}
+                </Text>
+                <Text style={styles.relatedMeta} numberOfLines={1}>
                   {item.serviceArea || 'Area not specified'} - {item.sellerName || 'Unknown'}
                 </Text>
               </TouchableOpacity>
@@ -461,6 +488,80 @@ const styles = StyleSheet.create({
   formCard: {
     paddingHorizontal: normalize(16),
     marginTop: normalize(6),
+  },
+  summaryCard: {
+    marginHorizontal: normalize(16),
+    marginTop: normalize(2),
+    borderWidth: 1,
+    borderColor: COLORS.lightGrey,
+    borderRadius: normalize(14),
+    paddingHorizontal: normalize(12),
+    paddingVertical: normalize(12),
+    backgroundColor: '#FBFCFE',
+  },
+  serviceTitle: {
+    fontFamily: FONTS.semiBold,
+    fontSize: FONT_SIZES.XLARGE,
+    color: COLORS.darkText,
+  },
+  summaryMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: normalize(8),
+    gap: normalize(8),
+  },
+  categoryBadge: {
+    borderRadius: normalize(10),
+    backgroundColor: '#EDF2FA',
+    paddingHorizontal: normalize(10),
+    paddingVertical: normalize(3),
+    color: '#59657B',
+    fontFamily: FONTS.medium,
+    fontSize: FONT_SIZES.XSMALL,
+  },
+  areaBadge: {
+    flex: 1,
+    borderRadius: normalize(10),
+    backgroundColor: '#EEF9F3',
+    paddingHorizontal: normalize(10),
+    paddingVertical: normalize(3),
+    color: '#15895A',
+    fontFamily: FONTS.medium,
+    fontSize: FONT_SIZES.XSMALL,
+  },
+  availabilityRow: {
+    marginTop: normalize(10),
+  },
+  inStockText: {
+    color: '#0A9D66',
+    fontFamily: FONTS.semiBold,
+    fontSize: FONT_SIZES.MEDIUM,
+  },
+  reviewSummary: {
+    marginTop: normalize(4),
+    color: COLORS.grey,
+    fontFamily: FONTS.regular,
+    fontSize: FONT_SIZES.SMALL,
+  },
+  descriptionBlock: {
+    marginTop: normalize(10),
+    borderWidth: 1,
+    borderColor: '#E8ECF3',
+    borderRadius: normalize(10),
+    backgroundColor: COLORS.white,
+    padding: normalize(10),
+  },
+  descriptionHeading: {
+    color: COLORS.darkText,
+    fontFamily: FONTS.medium,
+    fontSize: FONT_SIZES.SMALL,
+    marginBottom: normalize(4),
+  },
+  descriptionText: {
+    color: COLORS.grey,
+    fontFamily: FONTS.regular,
+    fontSize: FONT_SIZES.SMALL,
+    lineHeight: normalize(20),
   },
   actionRow: {
     marginHorizontal: normalize(16),

@@ -10,6 +10,7 @@ interface NotificationItemProps {
   time: string;
   isNew?: boolean;  // Optional: Highlight if the notification is new
   actions?: { text: string; onPress: () => void }[];  // Optional: Action buttons
+  onPress?: () => void;
 }
 
 const NotificationItem: React.FC<NotificationItemProps> = ({
@@ -19,8 +20,9 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
   time,
   isNew,
   actions,
+  onPress,
 }) => {
-  return (
+  const content = (
     <View style={[styles.container, isNew && styles.newNotification]}>
       <View style={styles.content}>
         <Image source={avatar} style={styles.avatar} />
@@ -45,6 +47,18 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
         </View>
       </View>
     </View>
+  );
+
+  if (onPress) {
+    return (
+      <TouchableOpacity activeOpacity={0.9} onPress={onPress}>
+        {content}
+      </TouchableOpacity>
+    );
+  }
+
+  return (
+    content
   );
 };
 

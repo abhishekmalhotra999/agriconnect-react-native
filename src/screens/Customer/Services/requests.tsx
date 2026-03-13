@@ -1,5 +1,13 @@
-import React, {useEffect, useMemo, useState} from 'react';
-import {ActivityIndicator, Pressable, StyleSheet, Text, View} from 'react-native';
+import React, {useEffect, useMemo, useState, useCallback} from 'react';
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  ScrollView,
+  RefreshControl,
+} from 'react-native';
 import Header from '../../../containers/header';
 import {COLORS, FONTS, FONT_SIZES} from '../../../themes/styles';
 import {normalize} from '../../../utils/util';
@@ -9,6 +17,7 @@ import ErrorText from '../../../components/UI/ErrorText';
 import {Order} from '../../../models/order';
 import {getMyServiceRequests} from '../../../api/services.api';
 import Filters from '../../../components/UI/Filters';
+import Loading from '../../../components/UI/Loading';
 
 const statusOptions = [
   'All',
@@ -29,37 +38,35 @@ const normalizeStatus = (value: string) => {
 const MyServiceRequests: React.FC<MyServiceRequestsScreenProps> = ({navigation}) => {
   const [requests, setRequests] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
 
-  useEffect(() => {
-    let mounted = true;
-
-    const loadRequests = async () => {
-      try {
-        setLoading(true);
-        setError('');
-        const result = await getMyServiceRequests();
-        if (mounted) {
-          setRequests(result);
-        }
-      } catch (_error) {
-        if (mounted) {
-          setError('Unable to load your requests right now.');
-        }
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    loadRequests();
-
-    return () => {
-      mounted = false;
-    };
+  const loadRequests = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const result = await getMyServiceRequests();
+      setRequests(result);
+    } catch {
+      setError('Unable to load your requests right now.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadRequests();
+  }, [loadRequests]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await loadRequests();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [loadRequests]);
 
   const filteredRequests = useMemo(() => {
     if (activeFilter === 'All') {
@@ -74,7 +81,13 @@ const MyServiceRequests: React.FC<MyServiceRequestsScreenProps> = ({navigation})
   return (
     <View style={styles.container}>
       <Header goBack title="My Requests" />
-      <View style={styles.content}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }>
+        <Loading visible={refreshing} inline message="Refreshing requests" />
         <Filters
           options={statusOptions}
           activeFilter={activeFilter}
@@ -104,7 +117,7 @@ const MyServiceRequests: React.FC<MyServiceRequestsScreenProps> = ({navigation})
           <Text style={styles.hintText}>Open a request to see timeline and delivery status.</Text>
         )}
         {!!error && <ErrorText text={error} />}
-      </View>
+      </ScrollView>
     </View>
   );
 };
@@ -116,6 +129,9 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: normalize(16),
   },
   loader: {

@@ -22,6 +22,7 @@ import SavedPage from './pages/SavedPage'
 import FarmerOnboardingPage from './pages/FarmerOnboardingPage'
 import SellerDashboardPage from './pages/SellerDashboardPage'
 import SellerProductsPage from './pages/SellerProductsPage'
+import AdminAnnouncementsPage from './pages/AdminAnnouncementsPage'
 
 export default function App() {
   return (
@@ -34,6 +35,7 @@ export default function App() {
           <Route path="/signup" element={<GuestRoute><SignupPage /></GuestRoute>} />
           <Route path="/forgot-password" element={<GuestRoute><ForgotPasswordPage /></GuestRoute>} />
           <Route path="/reset-password" element={<GuestRoute><ResetPasswordPage /></GuestRoute>} />
+          <Route path="/admin/announcements" element={<AdminAnnouncementsPage />} />
           <Route path="/onboarding/farmer" element={<ProtectedRoute><FarmerOnboardingPage /></ProtectedRoute>} />
 
           <Route

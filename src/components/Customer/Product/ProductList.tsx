@@ -8,11 +8,17 @@ import { Product } from '../../../models/Product';
 interface ProductListProps {
   productLists: Product[];
   onPress: (product: Product) => void;
+  cardVariant?: 'default' | 'service';
+  wishlistById?: Record<string, boolean>;
+  onToggleWishlist?: (product: Product) => void;
 }
 
 const ProductList: React.FC<ProductListProps> = ({ 
   productLists,
-  onPress
+  onPress,
+  cardVariant = 'default',
+  wishlistById,
+  onToggleWishlist,
 }) => {
   return (
     <List
@@ -22,7 +28,13 @@ const ProductList: React.FC<ProductListProps> = ({
       data={productLists}
       numColumns={2}
       renderItem={({ item }) => (
-        <ProductItem onPress={() => onPress(item)} item={item}/>
+        <ProductItem
+          onPress={() => onPress(item)}
+          item={item}
+          variant={cardVariant}
+          isWishlisted={Boolean(wishlistById?.[String(item.id)])}
+          onToggleWishlist={onToggleWishlist}
+        />
       )}
       separatorStyle={styles.separator}
       contentContainerStyle={styles.contentContainerStyle}

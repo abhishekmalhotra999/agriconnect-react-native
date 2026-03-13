@@ -99,6 +99,30 @@ export const markAllNotificationsAsRead = async (
   return saveUserPreferences({notifications: normalized});
 };
 
+export const setNotificationReadState = async (
+  notificationId: string | number,
+  read: boolean,
+): Promise<UserNotification> => {
+  const response = await apiClient.patch(
+    `/api/users/preferences/notifications/${notificationId}`,
+    {read},
+  );
+
+  return response.data?.notification;
+};
+
+export const markNotificationAsRead = async (
+  notificationId: string | number,
+): Promise<UserNotification> => {
+  return setNotificationReadState(notificationId, true);
+};
+
+export const markNotificationAsUnread = async (
+  notificationId: string | number,
+): Promise<UserNotification> => {
+  return setNotificationReadState(notificationId, false);
+};
+
 export const isProductSaved = async (productId: number | string) => {
   return isPreferenceSaved('product', productId);
 };

@@ -5,6 +5,7 @@ import List from '../../UI/List';
 import { normalize } from '../../../utils/util';
 import { COLORS } from '../../../themes/styles';
 import { ImageSourcePropType } from 'react-native';
+import { RefreshControl } from 'react-native';
 
 interface Notification {
   id: string;
@@ -12,21 +13,29 @@ interface Notification {
   name: string;
   message: string;
   time: string;
+  rawId?: string;
   isNew?: boolean;
   actions?: { text: string; onPress: () => void }[];
 }
 
 interface NotificationListProps {
   notifications: Notification[];
+  onNotificationPress?: (notification: Notification) => void;
+  refreshControl?: React.ReactElement<typeof RefreshControl>;
 }
 
-const NotificationList: React.FC<NotificationListProps> = ({ notifications }) => {
+const NotificationList: React.FC<NotificationListProps> = ({
+  notifications,
+  onNotificationPress,
+  refreshControl,
+}) => {
   return (
     <List
       scrollEnabled={true}
       showsHorizontalScrollIndicator={false}
       showsVerticalScrollIndicator={false}
       data={notifications}
+      refreshControl={refreshControl}
       renderItem={({ item }) => (
         <NotificationItem
           avatar={item.avatar}
@@ -35,6 +44,7 @@ const NotificationList: React.FC<NotificationListProps> = ({ notifications }) =>
           time={item.time}
           isNew={item.isNew}
           actions={item.actions}
+          onPress={onNotificationPress ? () => onNotificationPress(item) : undefined}
         />
       )}
       separatorStyle={styles.separator}

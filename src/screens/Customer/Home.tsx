@@ -1,4 +1,4 @@
-import React, {useRef, useEffect, useMemo, useState} from 'react';
+import React, {useRef, useEffect, useMemo, useState, useCallback} from 'react';
 import {
   ImageBackground,
   Pressable,
@@ -82,66 +82,51 @@ const Home: React.FC<HomeScreenProps> = ({ navigation }) => {
   const courses = useAppSelector(state => state.learn.courses);
   const lessonsProgress = useAppSelector(state => state.learn.lessonsProgress);
 
+  const loadPreferences = useCallback(async () => {
+    setPreferencesLoading(true);
+    try {
+      const result = await getUserPreferences();
+      const saved = Array.isArray(result?.savedItems) ? result.savedItems : [];
+      const recent = Array.isArray(result?.recentItems) ? result.recentItems : [];
+      setSavedCount(saved.length);
+      setRecentItems(recent.slice(0, 4));
+    } catch {
+      setSavedCount(0);
+      setRecentItems([]);
+    } finally {
+      setPreferencesLoading(false);
+    }
+  }, []);
+
+  const loadHighlights = useCallback(async () => {
+    setHighlightsLoading(true);
+    try {
+      const [products, services] = await Promise.all([
+        getMarketplaceProducts().catch(() => []),
+        getServiceListings().catch(() => []),
+      ]);
+      setMarketplaceHighlights((products || []).slice(0, 4));
+      setServiceHighlights((services || []).slice(0, 3));
+    } finally {
+      setHighlightsLoading(false);
+    }
+  }, []);
+
+  const handleRefresh = useCallback(async () => {
+    await Promise.all([loadPreferences(), loadHighlights()]);
+  }, [loadHighlights, loadPreferences]);
+
   useEffect(() => {
     registerScrollRef('HOME_TAB', scrollViewRef as React.RefObject<ScrollView>);
   }, [registerScrollRef]);
 
   useEffect(() => {
-    let mounted = true;
-
-    getUserPreferences()
-      .then(result => {
-        if (!mounted) {
-          return;
-        }
-
-        const saved = Array.isArray(result?.savedItems) ? result.savedItems : [];
-        const recent = Array.isArray(result?.recentItems) ? result.recentItems : [];
-        setSavedCount(saved.length);
-        setRecentItems(recent.slice(0, 4));
-      })
-      .catch(() => {
-        if (mounted) {
-          setSavedCount(0);
-          setRecentItems([]);
-        }
-      })
-      .finally(() => {
-        if (mounted) {
-          setPreferencesLoading(false);
-        }
-      });
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
+    loadPreferences();
+  }, [loadPreferences]);
 
   useEffect(() => {
-    let mounted = true;
-
-    Promise.all([
-      getMarketplaceProducts().catch(() => []),
-      getServiceListings().catch(() => []),
-    ])
-      .then(([products, services]) => {
-        if (!mounted) {
-          return;
-        }
-
-        setMarketplaceHighlights((products || []).slice(0, 4));
-        setServiceHighlights((services || []).slice(0, 3));
-      })
-      .finally(() => {
-        if (mounted) {
-          setHighlightsLoading(false);
-        }
-      });
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
+    loadHighlights();
+  }, [loadHighlights]);
 
   const quickActions = useMemo(
     () => [
@@ -329,6 +314,8 @@ const Home: React.FC<HomeScreenProps> = ({ navigation }) => {
       ref={scrollViewRef}
       headerHeight={normalize(65)}
       showsVerticalScrollIndicator={false}
+      onRefresh={handleRefresh}
+      refreshMessage="Refreshing home data"
       headerContent={(
         <>
         <SearchBar

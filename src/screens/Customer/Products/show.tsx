@@ -314,8 +314,8 @@ const ProductDetails: React.FC<ProductDetailsScreenProps> = ({ navigation, route
                 testID={`related-product-${item.id}`}
                 style={styles.relatedItem}
                 onPress={() => navigation.push('ProductDetails', {product: item})}>
-                <Text style={styles.relatedTitle}>{item.name}</Text>
-                <Text style={styles.relatedMeta}>{item.category} - {item.price}</Text>
+                <Text style={styles.relatedTitle} numberOfLines={1}>{item.name}</Text>
+                <Text style={styles.relatedMeta} numberOfLines={1}>{item.category} - {item.price}</Text>
               </TouchableOpacity>
             ))
           )}

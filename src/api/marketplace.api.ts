@@ -29,6 +29,11 @@ type MarketplaceProduct = {
   } | null;
   avgRating?: number;
   reviewCount?: number;
+  avg_rating?: number;
+  review_count?: number;
+  rating?: number;
+  rating_count?: number;
+  reviews?: Array<{rating?: number}>;
 };
 
 export type MarketplaceReview = {
@@ -73,10 +78,38 @@ const toDisplayPrice = (value?: number | string | null): string => {
   return `R${amount}`;
 };
 
+const toReviewMetrics = (item: MarketplaceProduct) => {
+  const directCount = Number(
+    item.reviewCount ?? item.review_count ?? item.rating_count ?? 0,
+  );
+  const directAverage = Number(
+    item.avgRating ?? item.avg_rating ?? item.rating ?? 0,
+  );
+
+  if (directCount > 0 || directAverage > 0) {
+    return {
+      rating: Number.isFinite(directAverage) ? directAverage : 0,
+      ratingCount: Number.isFinite(directCount) ? directCount : 0,
+    };
+  }
+
+  const reviews = Array.isArray(item.reviews) ? item.reviews : [];
+  if (reviews.length === 0) {
+    return {rating: 0, ratingCount: 0};
+  }
+
+  const total = reviews.reduce((sum, row) => sum + Number(row?.rating || 0), 0);
+  return {
+    rating: Number((total / reviews.length).toFixed(1)),
+    ratingCount: reviews.length,
+  };
+};
+
 const mapMarketplaceProduct = (item: MarketplaceProduct): Product => {
   const imageUrl = normalizeAssetUrl(item.main_picture_url || item.thumbnail_url);
   const description = String(item.description || '').trim();
   const stockCount = Number(item.stock_quantity || 0);
+  const metrics = toReviewMetrics(item);
 
   return {
     id: item.id,
@@ -98,8 +131,8 @@ const mapMarketplaceProduct = (item: MarketplaceProduct): Product => {
     ),
     stockQuantity: stockCount,
     inStock: stockCount > 0,
-    rating: Number(item.avgRating || 0),
-    ratingCount: Number(item.reviewCount || 0),
+    rating: metrics.rating,
+    ratingCount: metrics.ratingCount,
     sellerName: String(item.farmer?.name || '').trim() || undefined,
     sellerPhone: String(item.farmer?.phone || '').trim() || undefined,
   };

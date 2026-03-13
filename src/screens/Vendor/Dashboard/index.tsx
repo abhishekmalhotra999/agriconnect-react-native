@@ -1,5 +1,12 @@
-import React, {useMemo, useRef, useEffect, useState} from 'react';
-import { StyleSheet, Text, View, ScrollView, Platform } from 'react-native';
+import React, {useMemo, useRef, useEffect, useState, useCallback} from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
+  ScrollView,
+  Platform,
+  RefreshControl,
+} from 'react-native';
 import { DashboardScreenProps } from '../../../navigation/types';
 import Header from '../../../containers/header';
 import Card from '../../../components/UI/Card';
@@ -18,6 +25,7 @@ import {
   getUserPreferences,
 } from '../../../api/preferences.api';
 import {Product} from '../../../models/Product';
+import Loading from '../../../components/UI/Loading';
 
 const Dashboard: React.FC<DashboardScreenProps> = ({navigation}) => {
   const scrollViewRef = useRef<ScrollView>(null);
@@ -33,42 +41,46 @@ const Dashboard: React.FC<DashboardScreenProps> = ({navigation}) => {
     null,
   );
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     registerScrollRef('DASHBOARD_TAB', scrollViewRef);
   }, [registerScrollRef]);
 
-  useEffect(() => {
-    let mounted = true;
+  const loadDashboardData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-    Promise.all([getMyMarketplaceProducts(), getUserPreferences()])
-      .then(([productsResponse, preferencesResponse]) => {
-        if (!mounted) {
-          return;
-        }
+      const [productsResponse, preferencesResponse] = await Promise.all([
+        getMyMarketplaceProducts(),
+        getUserPreferences(),
+      ]);
 
-        setProducts(productsResponse || []);
-        setOnboarding(preferencesResponse?.farmerOnboarding || {completed: false});
-        setSellerStatus(preferencesResponse?.sellerStatus || 'pending');
-        setSellerStatusReason(preferencesResponse?.sellerStatusReason || null);
-      })
-      .catch(() => {
-        if (!mounted) {
-          return;
-        }
-        setError('Failed to load seller dashboard data.');
-      })
-      .finally(() => {
-        if (mounted) {
-          setLoading(false);
-        }
-      });
-
-    return () => {
-      mounted = false;
-    };
+      setProducts(productsResponse || []);
+      setOnboarding(preferencesResponse?.farmerOnboarding || {completed: false});
+      setSellerStatus(preferencesResponse?.sellerStatus || 'pending');
+      setSellerStatusReason(preferencesResponse?.sellerStatusReason || null);
+    } catch {
+      setError('Failed to load seller dashboard data.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadDashboardData();
+  }, [loadDashboardData]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await loadDashboardData();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [loadDashboardData]);
 
   const stats = useMemo(() => {
     const published = products.filter(product => product.status === 'published').length;
@@ -142,7 +154,11 @@ const Dashboard: React.FC<DashboardScreenProps> = ({navigation}) => {
         ref={scrollViewRef}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.bottomSpacing}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
         >
+        <Loading visible={refreshing} inline message="Refreshing seller dashboard" />
         <Chart labels={chartData.labels} values={chartData.values} />
         <Button
           label="Add Product"
