@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, Image, Platform, TouchableOpacity } from 'react-native';
 import Swiper from 'react-native-swiper';
 import { SCREEN_WIDTH } from '../../../themes/spacing';
@@ -15,20 +15,10 @@ interface OnBoardingSwiperProps {
 
 const images = [
   require('../../../../assets/images/onboarding.png'),
-  require('../../../../assets/images/onboarding.png'),
-  require('../../../../assets/images/onboarding.png'),
 ]
 
 const OnBoardingSwiper: React.FC<OnBoardingSwiperProps> = ({ navigation }) => {
-  const [slideCompleted, setSlideCompleted] = useState<boolean>(false)
   const { completeOnBoarding } = useOnboarding();
-
-  const getIndex = (index: number) => {
-    console.log("index", index)
-    if (index === 2) {
-      setSlideCompleted(true)
-    }
-  }
 
   const finished = async () => {
     completeOnBoarding()
@@ -43,7 +33,6 @@ const OnBoardingSwiper: React.FC<OnBoardingSwiperProps> = ({ navigation }) => {
       paginationStyle={styles.paginationStyle}
       loop={false}
       index={0}
-      onIndexChanged={getIndex}
     >
       {images.map((item, index) => (
       <View key={index} style={styles.content}>        
@@ -60,14 +49,12 @@ const OnBoardingSwiper: React.FC<OnBoardingSwiperProps> = ({ navigation }) => {
       </View>
       ))}
     </Swiper>
-    {slideCompleted &&
-      <Button 
-        label="Done" 
-        onPress={finished} 
-        style={styles.btn}
-        labelStyle={styles.labelStyle}
-        />
-      }
+    <Button 
+      label="Done" 
+      onPress={finished} 
+      style={styles.btn}
+      labelStyle={styles.labelStyle}
+    />
     </>
   );
 };
