@@ -32,8 +32,36 @@ type MarketplaceProduct = {
   reviewCount?: number;
   avg_rating?: number;
   review_count?: number;
+  reviews_count?: number;
+  total_reviews?: number;
+  totalReviews?: number;
+  reviewsCount?: number;
+  ratingsCount?: number;
   rating?: number;
   rating_count?: number;
+  ratingCount?: number;
+  averageRating?: number;
+  average_rating?: number;
+  reviewStats?: {
+    reviewCount?: number;
+    count?: number;
+    avgRating?: number;
+    average?: number;
+  };
+  review_stats?: {
+    review_count?: number;
+    count?: number;
+    avg_rating?: number;
+    average?: number;
+  };
+  review_summary?: {
+    count?: number;
+    average?: number;
+  };
+  ratings?: {
+    count?: number;
+    average?: number;
+  };
   reviews?: Array<{rating?: number}>;
 };
 
@@ -94,12 +122,43 @@ const toDisplayPrice = (value?: number | string | null): string => {
   return `R${amount}`;
 };
 
+const toFiniteNumber = (...values: Array<number | string | null | undefined>) => {
+  for (const value of values) {
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) {
+      return numeric;
+    }
+  }
+
+  return 0;
+};
+
 const toReviewMetrics = (item: MarketplaceProduct) => {
-  const directCount = Number(
-    item.reviewCount ?? item.review_count ?? item.rating_count ?? 0,
+  const reviewStats = item.reviewStats || item.review_stats || item.review_summary || item.ratings || {};
+
+  const directCount = toFiniteNumber(
+    item.reviewCount,
+    item.review_count,
+    item.reviews_count,
+    item.total_reviews,
+    item.totalReviews,
+    item.reviewsCount,
+    item.rating_count,
+    item.ratingCount,
+    item.ratingsCount,
+    (reviewStats as any).reviewCount,
+    (reviewStats as any).review_count,
+    (reviewStats as any).count,
   );
-  const directAverage = Number(
-    item.avgRating ?? item.avg_rating ?? item.rating ?? 0,
+  const directAverage = toFiniteNumber(
+    item.avgRating,
+    item.avg_rating,
+    item.averageRating,
+    item.average_rating,
+    item.rating,
+    (reviewStats as any).avgRating,
+    (reviewStats as any).avg_rating,
+    (reviewStats as any).average,
   );
 
   if (directCount > 0 || directAverage > 0) {

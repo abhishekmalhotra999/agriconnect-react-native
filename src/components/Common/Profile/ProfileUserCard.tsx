@@ -1,10 +1,11 @@
 import React from 'react';
-import {View, Text, StyleSheet, Image} from 'react-native';
+import {View, Text, StyleSheet} from 'react-native';
 import {COLORS, FONTS, FONT_SIZES} from '../../../themes/styles';
 import {userContext} from '../../../contexts/UserContext';
 import {profileImage} from '../../../constants/images';
 import apiClient from '../../../api/apiClient';
 import {useAppSelector} from '../../../store/storage';
+import AppImage from '../../UI/AppImage';
 
 const dummyUser = {
   id: Date.now().toString(),
@@ -39,19 +40,15 @@ const ProfileUserCard = ({image}: IProfileUserCardsProps) => {
   const {user} = userContext();
   const userDetail = useAppSelector(state => state.auth.userDetail);
   const currentUser = userDetail ?? user ?? dummyUser;
-  const [hasImageError, setHasImageError] = React.useState(false);
   const imageUri = normalizeAssetUrl(image);
-
-  React.useEffect(() => {
-    setHasImageError(false);
-  }, [image]);
 
   return (
     <View style={styles.section}>
       <View style={styles.iconCover}>
-        <Image
-          source={imageUri && !hasImageError ? {uri: imageUri} : profileImage}
-          onError={() => setHasImageError(true)}
+        <AppImage
+          source={imageUri ? {uri: imageUri} : undefined}
+          fallbackSource={profileImage}
+          placeholderStyle={styles.avatarPlaceholder}
           style={styles.avatar}
         />
       </View>
@@ -83,6 +80,9 @@ const styles = StyleSheet.create({
     width: 105,
     height: 98,
     resizeMode: 'contain',
+  },
+  avatarPlaceholder: {
+    borderRadius: 12,
   },
   rightIcon: {
     width: 18,

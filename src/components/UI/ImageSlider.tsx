@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, StyleSheet, Platform, StyleProp, ViewStyle, Image } from 'react-native';
+import { View, StyleSheet, Platform, StyleProp, ViewStyle } from 'react-native';
 import Swiper from 'react-native-swiper';
 import { SCREEN_WIDTH } from '../../themes/spacing';
 import FastImage from '@d11/react-native-fast-image';
 import { normalize } from '../../utils/util';
+import AppImage from './AppImage';
 
 interface ImageSliderProps {
   images: string[];
@@ -38,7 +39,7 @@ const ImageSlider: React.FC<ImageSliderProps> = ({
       >
         {images.map((image, index) => (
           <View key={index} style={{ borderRadius: normalize(12) }}>
-            <Image
+            <AppImage
               style={[styles.image, ImageComponentStyle]}
               // @ts-ignore
               source={image}

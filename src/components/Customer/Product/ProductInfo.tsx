@@ -3,7 +3,6 @@ import { View, Text, StyleSheet } from 'react-native';
 import { COLORS, FONTS, FONT_SIZES } from '../../../themes/styles';
 import { normalize } from '../../../utils/util';
 import { Product } from '../../../models/product';
-import MarqueeText from '../../UI/MarqueeText';
 
 type ProductInfoProps = {
   product: Product;
@@ -13,7 +12,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
   return (
     <View style={styles.content}>
       <View style={styles.titleRow}>
-        <MarqueeText text={product.name} textStyle={styles.title} />
+        <Text style={styles.title}>{product.name}</Text>
         <Text style={styles.categoryBadge}>{product.category || 'General'}</Text>
       </View>
       
@@ -43,6 +42,7 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.semiBold,
     fontSize: FONT_SIZES.XLARGE,
     color: COLORS.darkText,
+    lineHeight: normalize(40),
   },
   categoryBadge: {
     alignSelf: 'flex-start',

@@ -31,7 +31,7 @@ const CourseList: React.FC<CourseListProps> = ({courses: coursesProp}) => {
       renderItem={({item}) => <CourseItem item={item} />}
       ItemSeparatorComponent={() => <View style={styles.separator} />}
       contentContainerStyle={styles.listContainer}
-      keyExtractor={item => item.title}
+      keyExtractor={item => String(item.id)}
     />
   );
 };

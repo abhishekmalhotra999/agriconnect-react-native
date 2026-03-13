@@ -44,11 +44,12 @@ const OrderList: React.FC<OrderListProps> = ({
 
 const styles = StyleSheet.create({
   contentContainerStyle: {
-    paddingTop: normalize(15),
+    paddingTop: normalize(10),
+    paddingHorizontal: normalize(16),
     paddingBottom: normalize(120),
   },
   separator: {
-    paddingBottom: normalize(8),
+    paddingBottom: normalize(10),
   }
 });
 

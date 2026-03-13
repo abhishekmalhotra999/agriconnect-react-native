@@ -4,6 +4,7 @@ import { Product } from '../../../models/Product';
 import { COLORS, FONTS, FONT_SIZES } from '../../../themes/styles';
 import { normalize } from '../../../utils/util';
 import FastImage from '@d11/react-native-fast-image';
+import AppImage from '../../UI/AppImage';
 
 type ProductCardProps = {
   product: Product;
@@ -17,7 +18,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   return (
     <TouchableOpacity onPress={() => onPress(product)} style={styles.card}>
       <View style={styles.imageCard}>
-        <Image 
+        <AppImage
           source={product.image} 
           style={styles.image}
           resizeMode={FastImage.resizeMode.contain}

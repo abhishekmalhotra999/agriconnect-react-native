@@ -86,6 +86,7 @@ import LessonDetail from '../screens/Customer/Learn/LessonDetail';
 import ComingSoon from '../screens/ComingSoon';
 import PrivacyPolicy from '../screens/Common/Profile/PrivacyPolicy';
 import HelpCenter from '../screens/Common/Profile/HelpCenter';
+import MyWishlist from '../screens/Common/Profile/MyWishlist';
 import FarmerOnboardingScreen from '../screens/Vendor/FarmerOnboarding';
 import {getUserPreferences} from '../api/preferences.api';
 import {
@@ -248,6 +249,7 @@ type ProfileStachParamList = {
   ProfileHome: undefined;
   MyAccount: undefined;
   MyOrders: undefined;
+  MyWishlist: undefined;
   PrivacyPolicy: undefined;
   HelpCenter: undefined;
 };
@@ -291,6 +293,7 @@ const ProfileStackNavigation = () => {
       <ProfileStack.Screen name="ProfileHome" component={Profile} />
       <ProfileStack.Screen name="MyAccount" component={MyAccount} />
       <ProfileStack.Screen name="MyOrders" component={MyOrders} />
+      <ProfileStack.Screen name="MyWishlist" component={MyWishlist} />
       <HeaderStack.Screen name="Cart" component={Cart} />
       <ProfileStack.Screen name="PrivacyPolicy" component={PrivacyPolicy} />
       <ProfileStack.Screen name="HelpCenter" component={HelpCenter} />
@@ -988,6 +991,10 @@ const BottomTabNavigation: React.FC<{
           component={withTabTransition(MyProductsStackNavigation)}
           listeners={({navigation}) => ({
             tabPress: () => {
+              navigation.navigate('SELLER_TAB', {
+                screen: 'MyProducts',
+              } as never);
+
               const isAlreadyFocused = navigation.isFocused();
               if (isAlreadyFocused) {
                 scrollToTop('MY_PRODUCTS');

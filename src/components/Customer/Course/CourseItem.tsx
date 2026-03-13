@@ -1,9 +1,8 @@
-import React, {useMemo, useState} from 'react';
+import React, {useMemo} from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  Image,
   TouchableOpacity,
 } from 'react-native';
 import {Course} from '../../../models/Course';
@@ -12,6 +11,7 @@ import {normalize} from '../../../utils/util';
 import {useNavigation} from '@react-navigation/native';
 import {listItem1, listItem2, listItem3} from '../../../constants/images';
 import {useAppSelector} from '../../../store/storage';
+import AppImage from '../../UI/AppImage';
 
 interface CourseProps {
   item: Course;
@@ -19,7 +19,6 @@ interface CourseProps {
 
 const CourseItem: React.FC<CourseProps> = ({item}) => {
   const navigation = useNavigation();
-  const [imageFailed, setImageFailed] = useState(false);
   const lessonsProgress = useAppSelector(state => state.learn.lessonsProgress);
 
   const fallbackSource = useMemo(() => {
@@ -29,12 +28,12 @@ const CourseItem: React.FC<CourseProps> = ({item}) => {
   }, [item.id]);
 
   const imageSource = useMemo(() => {
-    if (!imageFailed && item.thumbnailUrl) {
+    if (item.thumbnailUrl) {
       return {uri: item.thumbnailUrl};
     }
 
-    return fallbackSource;
-  }, [fallbackSource, imageFailed, item.thumbnailUrl]);
+    return undefined;
+  }, [item.thumbnailUrl]);
 
   const courseProgress = useMemo(
     () =>
@@ -56,10 +55,10 @@ const CourseItem: React.FC<CourseProps> = ({item}) => {
     <TouchableOpacity
       style={[styles.courseContainer, styles.card]}
       onPress={courseClickHandler}>
-      <Image
+      <AppImage
         source={imageSource}
+        fallbackSource={fallbackSource}
         style={styles.courseImage}
-        onError={() => setImageFailed(true)}
         resizeMode={'cover'}
       />
       <View style={styles.courseDetails}>

@@ -21,8 +21,11 @@ import {getUserPreferences} from '../../api/preferences.api';
 import {useAppSelector} from '../../store/storage';
 import {userContext} from '../../contexts/UserContext';
 import {Product} from '../../models/Product';
-import {getMarketplaceProducts} from '../../api/marketplace.api';
-import {getServiceListings} from '../../api/services.api';
+import {
+  getMarketplaceProductDetail,
+  getMarketplaceProducts,
+} from '../../api/marketplace.api';
+import {getServiceListingDetail, getServiceListings} from '../../api/services.api';
 import Loading from '../../components/UI/Loading';
 
 const searchScopes = [
@@ -73,7 +76,14 @@ const Home: React.FC<HomeScreenProps> = ({ navigation }) => {
   const [highlightsLoading, setHighlightsLoading] = useState(true);
   const [savedCount, setSavedCount] = useState(0);
   const [recentItems, setRecentItems] = useState<
-    Array<{id: string; type?: string; title?: string; subtitle?: string}>
+    Array<{
+      id: string;
+      type?: string;
+      title?: string;
+      subtitle?: string;
+      link?: string;
+      image?: string;
+    }>
   >([]);
   const [marketplaceHighlights, setMarketplaceHighlights] = useState<Product[]>([]);
   const [serviceHighlights, setServiceHighlights] = useState<Product[]>([]);
@@ -199,16 +209,53 @@ const Home: React.FC<HomeScreenProps> = ({ navigation }) => {
     };
   }, [courses, lessonsProgress]);
 
-  const openRecentItem = (item: {id: string; type?: string; title?: string; subtitle?: string}) => {
+  const openRecentItem = async (item: {
+    id: string;
+    type?: string;
+    title?: string;
+    subtitle?: string;
+    link?: string;
+  }) => {
     const kind = String(item.type || '').toLowerCase();
     const title = String(item.title || '').toLowerCase();
+    const link = String(item.link || '').toLowerCase();
+
+    const linkIdMatch = link.match(/\/(marketplace|services|courses)\/(\d+)/);
+    const parsedId = Number(item.id || linkIdMatch?.[2] || 0);
+
+    if ((kind === 'product' || link.indexOf('/marketplace/') >= 0) && parsedId > 0) {
+      try {
+        const result = await getMarketplaceProductDetail(parsedId);
+        navigation.navigate('ProductDetails', {product: result.product});
+        return;
+      } catch {
+        navigation.navigate('Products');
+        return;
+      }
+    }
+
+    if ((kind === 'service' || link.indexOf('/services/') >= 0) && parsedId > 0) {
+      try {
+        const result = await getServiceListingDetail(parsedId);
+        navigation.navigate('ServiceDetails', {product: result.product});
+        return;
+      } catch {
+        navigation.navigate('Services');
+        return;
+      }
+    }
 
     if (kind === 'service' || title.indexOf('service') >= 0) {
       navigation.navigate('Services');
       return;
     }
 
-    if (kind === 'course' || title.indexOf('course') >= 0 || title.indexOf('lesson') >= 0) {
+    if (
+      kind === 'course' ||
+      link.indexOf('/courses/') >= 0 ||
+      title.indexOf('course') >= 0 ||
+      title.indexOf('lesson') >= 0
+    ) {
       navigation.navigate('Learn');
       return;
     }
@@ -286,7 +333,9 @@ const Home: React.FC<HomeScreenProps> = ({ navigation }) => {
         scope: 'Recent' as const,
         title: item.title || 'Untitled',
         subtitle: item.subtitle || String(item.type || 'recent activity'),
-        onPress: () => openRecentItem(item),
+        onPress: () => {
+          void openRecentItem(item);
+        },
       })),
     ];
 
@@ -474,7 +523,9 @@ const Home: React.FC<HomeScreenProps> = ({ navigation }) => {
                 <Pressable
                   key={`${item.type || 'item'}-${item.id}`}
                   style={styles.recentCard}
-                  onPress={() => openRecentItem(item)}>
+                  onPress={() => {
+                    void openRecentItem(item);
+                  }}>
                   <View style={styles.recentMetaWrap}>
                     <Text style={styles.recentType}>{String(item.type || 'item')}</Text>
                     <Text style={styles.recentTitle}>{item.title || 'Untitled'}</Text>

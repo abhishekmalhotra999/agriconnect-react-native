@@ -24,6 +24,7 @@ import useStatusBarStyle from '../../../hooks/useStatusBarStyle';
 import {getMarketplaceProducts} from '../../../api/marketplace.api';
 import ErrorText from '../../../components/UI/ErrorText';
 import {useFocusEffect} from '@react-navigation/native';
+import {getUserPreferences, toggleSavedPreference} from '../../../api/preferences.api';
 
 const PAGE_SIZE = 8;
 type SortKey = 'newest' | 'priceAsc' | 'priceDesc' | 'stockDesc';
@@ -112,6 +113,7 @@ const Products: React.FC<ProductsScreenProps> = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string>('');
+  const [savedProductMap, setSavedProductMap] = useState<Record<string, boolean>>({});
 
   function show(product: Product) {
     navigation.navigate('ProductDetails', { product })
@@ -125,8 +127,23 @@ const Products: React.FC<ProductsScreenProps> = ({ navigation }) => {
     try {
       setLoading(true);
       setError('');
-      const result = await getMarketplaceProducts();
+      const [result, preferences] = await Promise.all([
+        getMarketplaceProducts(),
+        getUserPreferences().catch(() => ({})),
+      ]);
+
+      const savedItems = Array.isArray((preferences as any)?.savedItems)
+        ? (preferences as any).savedItems
+        : [];
+      const nextSavedMap: Record<string, boolean> = {};
+      savedItems.forEach((item: {id?: string | number; type?: string}) => {
+        if (String(item?.type) === 'product' && item?.id !== undefined) {
+          nextSavedMap[String(item.id)] = true;
+        }
+      });
+
       setProducts(result || []);
+      setSavedProductMap(nextSavedMap);
       setVisibleCount(PAGE_SIZE);
     } catch (apiError) {
       setError('Unable to load products right now.');
@@ -140,6 +157,37 @@ const Products: React.FC<ProductsScreenProps> = ({ navigation }) => {
       loadProducts();
     }, [loadProducts]),
   );
+
+  const onToggleWishlist = async (selectedProduct: Product) => {
+    const key = String(selectedProduct.id);
+    const wasSaved = Boolean(savedProductMap[key]);
+
+    setSavedProductMap(current => ({
+      ...current,
+      [key]: !wasSaved,
+    }));
+
+    try {
+      const nextState = await toggleSavedPreference('product', {
+        type: 'product',
+        id: key,
+        title: selectedProduct.name,
+        subtitle: selectedProduct.price,
+        image: selectedProduct.imageUrl,
+        link: `/marketplace/${selectedProduct.id}`,
+      });
+
+      setSavedProductMap(current => ({
+        ...current,
+        [key]: nextState,
+      }));
+    } catch {
+      setSavedProductMap(current => ({
+        ...current,
+        [key]: wasSaved,
+      }));
+    }
+  };
 
   const categories = useMemo(() => {
     const unique = new Set<string>();
@@ -374,7 +422,12 @@ const Products: React.FC<ProductsScreenProps> = ({ navigation }) => {
         {loading ? (
           <MarketplaceSkeletonGrid />
         ) : (
-          <ProductList productLists={visibleProducts} onPress={show} />
+          <ProductList
+            productLists={visibleProducts}
+            onPress={show}
+            wishlistById={savedProductMap}
+            onToggleWishlist={onToggleWishlist}
+          />
         )}
         {loadingMore && <ActivityIndicator testID="products-load-more-loader" style={styles.loader} color={COLORS.primary} />}
         {!!error && <ErrorText text={error} />}

@@ -1,10 +1,13 @@
 import React from 'react';
 import {
+  ReactNode,
   View,
   Text,
   StyleSheet,
   Image,
   ImageSourcePropType,
+  ImageStyle,
+  StyleProp,
   TouchableOpacity,
 } from 'react-native';
 import {COLORS, FONTS, FONT_SIZES} from '../../../themes/styles';
@@ -13,15 +16,35 @@ import {chevronRightIcon} from '../../../constants/images';
 interface ProfileProps {
   title: string;
   onPress: () => void;
-  icon: ImageSourcePropType;
+  icon?: ImageSourcePropType;
+  iconTintColor?: string;
+  iconStyle?: StyleProp<ImageStyle>;
+  iconElement?: ReactNode;
 }
 
-const ProfileCard: React.FC<ProfileProps> = ({title, onPress, icon}) => {
+const ProfileCard: React.FC<ProfileProps> = ({
+  title,
+  onPress,
+  icon,
+  iconTintColor,
+  iconStyle,
+  iconElement,
+}) => {
   return (
     <TouchableOpacity onPress={onPress} style={styles.card}>
       <View style={styles.inline}>
         <View style={styles.iconCover}>
-          <Image source={icon} style={styles.icon} />
+          {iconElement ||
+            (icon ? (
+              <Image
+                source={icon}
+                style={[
+                  styles.icon,
+                  iconStyle,
+                  iconTintColor ? {tintColor: iconTintColor} : null,
+                ]}
+              />
+            ) : null)}
         </View>
         <Text style={styles.title}>{title}</Text>
       </View>

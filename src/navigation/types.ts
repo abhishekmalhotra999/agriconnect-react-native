@@ -38,6 +38,7 @@ export type CustomerStackParamList = {
   Profile: undefined;
   MyAccount: undefined;
   MyOrders: undefined;
+  MyWishlist: undefined;
   InAppNotifications: undefined;
   Cart: undefined;
   Products: undefined;
@@ -85,6 +86,7 @@ export type ChatRoomScreenNavigationProp = StackNavigationProp<CustomerStackPara
 export type ProfileScreenNavigationProp = StackNavigationProp<CustomerStackParamList, 'Profile'>;
 export type MyAccountScreenNavigationProp = StackNavigationProp<CustomerStackParamList, 'MyAccount'>;
 export type MyOrdersScreenNavigationProp = StackNavigationProp<CustomerStackParamList, 'MyOrders'>;
+export type MyWishlistScreenNavigationProp = StackNavigationProp<CustomerStackParamList, 'MyWishlist'>;
 export type CartScreenNavigationProp = StackNavigationProp<CustomerStackParamList, 'Cart'>;
 export type InAppNotificationsScreenNavigationProp = StackNavigationProp<CustomerStackParamList, 'InAppNotifications'>;
 export type ProductsScreenNavigationProp = StackNavigationProp<CustomerStackParamList, 'Products'>;
@@ -122,6 +124,7 @@ export type ChatRoomScreenRouteProp = RouteProp<CustomerStackParamList, 'ChatRoo
 export type ProfileScreenRouteProp = RouteProp<CustomerStackParamList, 'Profile'>;
 export type MyAccountScreenRouteProp = RouteProp<CustomerStackParamList, 'MyAccount'>;
 export type MyOrdersScreenRouteProp = RouteProp<CustomerStackParamList, 'MyOrders'>;
+export type MyWishlistScreenRouteProp = RouteProp<CustomerStackParamList, 'MyWishlist'>;
 export type CartScreenRouteProp = RouteProp<CustomerStackParamList, 'Cart'>;
 export type InAppNotificationsScreenRouteProp = RouteProp<CustomerStackParamList, 'InAppNotifications'>;
 export type ProductsScreenRouteProp = RouteProp<CustomerStackParamList, 'Products'>;
@@ -272,6 +275,11 @@ export interface MyAccountScreenProps {
 export interface MyOrdersScreenProps {
   navigation: MyOrdersScreenNavigationProp;
   route: MyOrdersScreenRouteProp;
+}
+
+export interface MyWishlistScreenProps {
+  navigation: MyWishlistScreenNavigationProp;
+  route: MyWishlistScreenRouteProp;
 }
 
 export interface CartScreenProps {

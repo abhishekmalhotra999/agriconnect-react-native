@@ -1,6 +1,5 @@
 import {
   Dimensions,
-  Image,
   StyleSheet,
   View,
   Text,
@@ -20,11 +19,11 @@ import learnAction from '../../../store/slices/learn.slice';
 import RenderHtml from 'react-native-render-html';
 import {normalize} from '../../../utils/util';
 import {greenCheck, listItem2} from '../../../constants/images';
+import AppImage from '../../../components/UI/AppImage';
 
 export default function Lesson({route, navigation}) {
   const [loading, setLoading] = useState(true);
   const [activeSections, setActiveSections] = useState<number[]>([]);
-  const [heroImageFailed, setHeroImageFailed] = useState(false);
   const {id} = route.params;
   const authToken = useAppSelector(state => state.auth.authToken);
   const dispatch = useAppDispatch();
@@ -36,14 +35,6 @@ export default function Lesson({route, navigation}) {
   const courseDetail = useMemo(() => {
     return courses.find(course => course.id === id);
   }, [courses, id]);
-
-  const courseHeroSource = useMemo(() => {
-    if (!heroImageFailed && courseDetail?.thumbnailUrl) {
-      return {uri: courseDetail.thumbnailUrl};
-    }
-
-    return listItem2;
-  }, [courseDetail?.thumbnailUrl, heroImageFailed]);
 
   useEffect(() => {
     if (id && authToken) {
@@ -139,11 +130,11 @@ export default function Lesson({route, navigation}) {
       {loading && <ActivityIndicator />}
       {!loading && (
         <ScrollView style={styles.scrollContainer}>
-          <Image
-            source={courseHeroSource}
+          <AppImage
+            source={courseDetail?.thumbnailUrl ? {uri: courseDetail.thumbnailUrl} : undefined}
+            fallbackSource={listItem2}
             style={styles.image}
             resizeMode="cover"
-            onError={() => setHeroImageFailed(true)}
           />
           <View>
             {courseDetail?.description ? (

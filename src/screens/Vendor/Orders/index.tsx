@@ -3,7 +3,7 @@ import {ActivityIndicator, StyleSheet, Text, View} from 'react-native';
 import { OrdersScreenProps } from '../../../navigation/types';
 import Header from '../../../containers/header';
 import { COLORS } from '../../../themes/styles';
-import { normalize, headerHeight } from '../../../utils/util';
+import { normalize } from '../../../utils/util';
 import SearchBar from '../../../components/UI/SearchBar';
 import useStatusBarStyle from '../../../hooks/useStatusBarStyle';
 import OrderList from '../../../components/Vendor/Order/OrderList';
@@ -55,6 +55,9 @@ const Orders: React.FC<OrdersScreenProps> = ({ navigation }) => {
   const isTechnician = normalizedRole === 'technician';
   const isFarmer = normalizedRole === 'farmer';
   const isSeller = isTechnician || isFarmer;
+  const canGoBack = navigation.canGoBack();
+  const breadcrumbText = isTechnician ? 'Seller > Bookings' : 'Seller > Orders';
+  const screenHeading = isTechnician ? 'Bookings Workspace' : 'Order Workspace';
 
   const loadOrders = useCallback(async () => {
     if (!isSeller) {
@@ -118,6 +121,19 @@ const Orders: React.FC<OrdersScreenProps> = ({ navigation }) => {
       });
   }, [activeFilter, orders, searchQuery]);
 
+  const summary = useMemo(() => {
+    const total = orders.length;
+    const incoming = orders.filter(
+      item => normalizeStatus(String(item.rawStatus || item.status || '')) === 'new',
+    ).length;
+    const active = orders.filter(item => {
+      const state = normalizeStatus(String(item.rawStatus || item.status || ''));
+      return ['accepted', 'in_progress', 'pending'].includes(state);
+    }).length;
+
+    return {total, incoming, active};
+  }, [orders]);
+
   function editOrder(order: Order) {
     navigation.navigate('OrderDetails', { order })
   }
@@ -158,18 +174,40 @@ const Orders: React.FC<OrdersScreenProps> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Header />
+      <Header
+        goBack={canGoBack}
+        title={isTechnician ? 'My Bookings' : 'My Orders'}
+        icons={false}
+      />
       <AnimatedHeaderScrollView 
-        headerHeight={headerHeight()}
+        headerHeight={normalize(182)}
         onRefresh={loadOrders}
         refreshMessage="Refreshing requests"
         headerContent={(
           <>
+          <View style={styles.headerBlock}>
+          <Text style={styles.breadcrumb}>{breadcrumbText}</Text>
+          <Text style={styles.screenHeading}>{screenHeading}</Text>
           <SearchBar
             placeholder={isTechnician ? 'Find service requests' : 'Find marketplace orders'}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
+          <View style={styles.summaryRow}>
+            <View style={styles.summaryCard}>
+              <Text style={styles.summaryLabel}>Total</Text>
+              <Text style={styles.summaryValue}>{summary.total}</Text>
+            </View>
+            <View style={styles.summaryCard}>
+              <Text style={styles.summaryLabel}>New</Text>
+              <Text style={styles.summaryValue}>{summary.incoming}</Text>
+            </View>
+            <View style={styles.summaryCard}>
+              <Text style={styles.summaryLabel}>Active</Text>
+              <Text style={styles.summaryValue}>{summary.active}</Text>
+            </View>
+          </View>
+          </View>
           </>
         )}
       >
@@ -178,6 +216,8 @@ const Orders: React.FC<OrdersScreenProps> = ({ navigation }) => {
             options={technicianOptions}
             activeFilter={activeFilter}
             onFilterChange={setActiveFilter}
+            style={styles.filtersContentContainer}
+            itemStyle={styles.filterChip}
           />
         )}
         {!!error && <ErrorText text={error} />}
@@ -220,10 +260,67 @@ const styles = StyleSheet.create({
     paddingHorizontal: normalize(16),
   },
   loader: {
-    marginTop: normalize(20),
+    marginTop: normalize(24),
+  },
+  headerBlock: {
+    paddingBottom: normalize(8),
+  },
+  breadcrumb: {
+    marginBottom: normalize(4),
+    color: COLORS.grey,
+    fontSize: normalize(10),
+    paddingHorizontal: normalize(16),
+  },
+  screenHeading: {
+    color: COLORS.darkText,
+    fontSize: normalize(20),
+    fontWeight: '700',
+    paddingHorizontal: normalize(16),
+    marginBottom: normalize(10),
+  },
+  summaryRow: {
+    paddingHorizontal: normalize(16),
+    marginTop: normalize(10),
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  summaryCard: {
+    flex: 1,
+    marginRight: normalize(8),
+    borderRadius: normalize(12),
+    borderWidth: 1,
+    borderColor: '#E6EBF2',
+    paddingHorizontal: normalize(10),
+    paddingVertical: normalize(8),
+    backgroundColor: '#FAFCFF',
+  },
+  summaryLabel: {
+    color: COLORS.grey,
+    fontSize: normalize(10),
+    marginBottom: normalize(3),
+  },
+  summaryValue: {
+    color: COLORS.darkText,
+    fontSize: normalize(16),
+    fontWeight: '700',
+  },
+  filtersContentContainer: {
+    paddingTop: normalize(10),
+    paddingBottom: normalize(10),
+    paddingHorizontal: normalize(16),
+    paddingRight: normalize(40),
+  },
+  filterChip: {
+    width: 'auto',
+    minWidth: normalize(88),
+    paddingHorizontal: normalize(14),
+    paddingVertical: normalize(8),
+    marginRight: normalize(10),
+    borderRadius: normalize(20),
   },
   successText: {
-    marginTop: normalize(10),
+    marginTop: normalize(14),
+    marginHorizontal: normalize(16),
     color: COLORS.darkGreen,
     fontSize: normalize(11),
   },

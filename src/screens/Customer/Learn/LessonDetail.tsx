@@ -1,5 +1,4 @@
 import {
-  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -17,6 +16,7 @@ import Button from '../../../components/UI/Button';
 import {updateLessonProgress} from '../../../api/learn.api';
 import learnActions from '../../../store/slices/learn.slice';
 import {listItem3} from '../../../constants/images';
+import AppImage from '../../../components/UI/AppImage';
 
 const tagsStyles = {
   strong: {
@@ -30,7 +30,6 @@ const tagsStyles = {
 export default function LessonDetail({route}) {
   const params = route.params;
   const [loading, setLoading] = useState<boolean>(false);
-  const [heroImageFailed, setHeroImageFailed] = useState<boolean>(false);
   const {lessons, completedLessons} = useAppSelector(state => state.learn);
   const dispatch = useAppDispatch();
   const {width} = useWindowDimensions();
@@ -49,20 +48,19 @@ export default function LessonDetail({route}) {
   }, [lessons, lessonId]);
 
   const heroSource = useMemo(() => {
-    if (!heroImageFailed && lessonDetail?.thumbnailUrl) {
+    if (lessonDetail?.thumbnailUrl) {
       return {uri: lessonDetail.thumbnailUrl};
     }
 
     if (
-      !heroImageFailed &&
       lessonDetail?.asset?.contentType === 'image' &&
       lessonDetail?.asset?.url
     ) {
       return {uri: lessonDetail.asset.url};
     }
 
-    return listItem3;
-  }, [lessonDetail, heroImageFailed]);
+    return undefined;
+  }, [lessonDetail]);
 
   const lessonHtml = useMemo(() => {
     const rawContent =
@@ -105,11 +103,11 @@ export default function LessonDetail({route}) {
     <View style={styles.wrapper}>
       <Header title={lessonDetail?.title} goBack icons={false} />
       <ScrollView style={styles.content}>
-        <Image
+        <AppImage
           source={heroSource}
+          fallbackSource={listItem3}
           style={styles.heroImage}
           resizeMode="cover"
-          onError={() => setHeroImageFailed(true)}
         />
 
         <View style={styles.control}>

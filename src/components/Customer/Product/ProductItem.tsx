@@ -11,6 +11,7 @@ import {
 import {Product} from '../../../models/Product';
 import {COLORS, FONTS, FONT_SIZES} from '../../../themes/styles';
 import {normalize} from '../../../utils/util';
+import AppImage from '../../UI/AppImage';
 
 type ProductItemProps = {
   item: Product;
@@ -27,7 +28,10 @@ const ProductItem: React.FC<ProductItemProps> = ({
   isWishlisted = false,
   onToggleWishlist,
 }) => {
-  const rating = Number(item.rating || 0).toFixed(1);
+  const ratingValue = Number(item.rating || 0);
+  const ratingCountValue = Number(item.ratingCount || 0);
+  const rating = Number.isFinite(ratingValue) ? ratingValue.toFixed(1) : '0.0';
+  const ratingCount = Number.isFinite(ratingCountValue) ? ratingCountValue : 0;
   const isServiceCard = variant === 'service';
 
   const onWishlistPress = (event: GestureResponderEvent) => {
@@ -41,7 +45,7 @@ const ProductItem: React.FC<ProductItemProps> = ({
       onPress={() => onPress(item)}
       style={[styles.card, isServiceCard && styles.serviceCard]}>
       <View style={[styles.imageShell, isServiceCard && styles.serviceImageShell]}>
-        <Image source={item.image as any} style={styles.productImage} resizeMode="cover" />
+        <AppImage source={item.image as any} style={styles.productImage} resizeMode="cover" />
         <Pressable
           onPress={onWishlistPress}
           style={[styles.wishlistCircle, isWishlisted && styles.wishlistCircleActive]}>
@@ -103,7 +107,7 @@ const ProductItem: React.FC<ProductItemProps> = ({
               style={styles.starIcon}
               resizeMode="contain"
             />{' '}
-            {rating} ({item.ratingCount || 0})
+              {rating} ({ratingCount})
           </Text>
         </View>
       </View>

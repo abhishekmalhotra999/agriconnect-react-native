@@ -7,17 +7,20 @@ import { normalize } from '../../../utils/util';
 type CheckoutButtonProps = {
   label: string,
   style?: StyleProp<ViewStyle>,
+  disabled?: boolean,
   onPress: () => void;
 }
 
 const CheckoutButton: React.FC<CheckoutButtonProps> = ({
   label,
   style,
+  disabled = false,
   onPress
 }) => {
   return (
     <Button 
       onPress={onPress}
+      disabled={disabled}
       label={label} 
       style={[styles.btnStyle, style]} 
       labelStyle={styles.labelStyle} 
