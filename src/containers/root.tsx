@@ -62,6 +62,7 @@ import {
   blogsIconActive,
   chatsIcon,
   chatsIconActive,
+  farmSizeIcon,
   homeIcon,
   homeIconActive,
   learnIcon,
@@ -134,6 +135,7 @@ type CustomerRootStackParamList = {
     registerScrollRef: (ref: React.RefObject<ScrollView>) => void;
   };
   HOME_TAB: undefined;
+  MARKETPLACE_TAB: undefined;
   Learn: undefined;
   SERVICES_TAB: undefined;
   REQUESTS_TAB: undefined;
@@ -731,6 +733,53 @@ const BottomTabNavigation: React.FC<{
           };
         }}
       />
+      {showSellerTab ? (
+        <Tab.Screen
+          name="MARKETPLACE_TAB"
+          component={withTabTransition(ProductsStackNavigation)}
+          listeners={({navigation}) => ({
+            tabPress: () => {
+              const isAlreadyFocused = navigation.isFocused();
+              if (isAlreadyFocused) {
+                scrollToTop('Products');
+              }
+            },
+          })}
+          options={({route}) => {
+            const routeName = getFocusedRouteNameFromRoute(route) ?? 'Products';
+            return {
+              headerShown: false,
+              tabBarLabel: ({focused}) => (
+                <>
+                  <Text
+                    style={[
+                      styles.label,
+                      {
+                        color: focused ? COLORS.primary : COLORS.grey,
+                      },
+                    ]}>
+                    Marketplace
+                  </Text>
+                </>
+              ),
+              tabBarIcon: ({focused}) => (
+                <Image
+                  source={farmSizeIcon}
+                  style={[
+                    styles.icon,
+                    {tintColor: focused ? COLORS.primary : COLORS.grey},
+                  ]}
+                />
+              ),
+              tabBarStyle: ['ProductDetails', 'ServiceDetails', 'ServiceRequestDetails', 'Profile', 'MyAccount'].includes(
+                routeName,
+              )
+                ? {display: 'none'}
+                : styles.tabBarStyle,
+            };
+          }}
+        />
+      ) : null}
       <Tab.Screen
         name="Learn"
         component={withTabTransition(LearnStackNavigation)}
@@ -1063,7 +1112,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: FONTS.semiBold,
-    fontSize: FONT_SIZES.XSMALL,
+    fontSize: normalize(9),
     color: COLORS.grey,
     // top: 14,
   },

@@ -23,6 +23,7 @@ export type UserPreferencesResponse = {
     image?: string;
     link?: string;
   }>;
+  notifications?: UserNotification[];
   recentItems?: Array<{
     type: 'product' | string;
     id: string;
@@ -31,6 +32,21 @@ export type UserPreferencesResponse = {
     image?: string;
     link?: string;
   }>;
+};
+
+export type UserNotification = {
+  id?: string | number;
+  title?: string;
+  message?: string;
+  body?: string;
+  text?: string;
+  type?: string;
+  source?: string;
+  read?: boolean;
+  isRead?: boolean;
+  createdAt?: string | number;
+  timestamp?: string | number;
+  link?: string;
 };
 
 export const getUserPreferences = async (): Promise<UserPreferencesResponse> => {
@@ -64,6 +80,23 @@ const saveUserPreferences = async (
 ): Promise<UserPreferencesResponse> => {
   const response = await apiClient.put('/api/users/preferences', payload);
   return response.data;
+};
+
+export const getUserNotifications = async (): Promise<UserNotification[]> => {
+  const preferences = await getUserPreferences();
+  return Array.isArray(preferences.notifications) ? preferences.notifications : [];
+};
+
+export const markAllNotificationsAsRead = async (
+  notifications: UserNotification[],
+): Promise<UserPreferencesResponse> => {
+  const normalized = notifications.map(notification => ({
+    ...notification,
+    read: true,
+    isRead: true,
+  }));
+
+  return saveUserPreferences({notifications: normalized});
 };
 
 export const isProductSaved = async (productId: number | string) => {

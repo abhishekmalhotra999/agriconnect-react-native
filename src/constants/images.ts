@@ -24,6 +24,7 @@ const chevronDown = require('../../assets/icons/chevron-down.png');
 
 const landcoverIcon = require('../../assets/icons/landcover.png');
 const moneyBillIcon = require('../../assets/icons/money-bill.png');
+const farmSizeIcon = require('../../assets/icons/farm-size.png');
 const adsImage = require('../../assets/icons/ads.png');
 const searchIcon = require('../../assets/icons/search.png');
 const filterIcon = require('../../assets/icons/filter.png');
@@ -100,6 +101,7 @@ export {
   bankIcon,
   landcoverIcon,
   moneyBillIcon,
+  farmSizeIcon,
   userIconLight,
   bellLight,
   bellDark,

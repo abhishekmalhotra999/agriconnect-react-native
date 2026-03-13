@@ -1,9 +1,10 @@
 import React from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { COLORS, FONTS, FONT_SIZES } from '../../../themes/styles';
+import { ImageSourcePropType } from 'react-native';
 
 interface NotificationItemProps {
-  avatar: string;
+  avatar: ImageSourcePropType;
   name: string;
   message: string;
   time: string;
@@ -20,9 +21,8 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
   actions,
 }) => {
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, isNew && styles.newNotification]}>
       <View style={styles.content}>
-        {/* @ts-ignore */}
         <Image source={avatar} style={styles.avatar} />
         <View style={styles.textContainer}>
           <Text style={styles.message}>
@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
   },
   newNotification: {
-    // backgroundColor: '#FEF6E6',
+    backgroundColor: COLORS.primaryLight,
   },
   content: {
     flexDirection: 'row',

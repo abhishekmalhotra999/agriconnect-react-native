@@ -4,10 +4,11 @@ import NotificationItem from './NotificationItem';
 import List from '../../UI/List';
 import { normalize } from '../../../utils/util';
 import { COLORS } from '../../../themes/styles';
+import { ImageSourcePropType } from 'react-native';
 
 interface Notification {
   id: string;
-  avatar: string;
+  avatar: ImageSourcePropType;
   name: string;
   message: string;
   time: string;
