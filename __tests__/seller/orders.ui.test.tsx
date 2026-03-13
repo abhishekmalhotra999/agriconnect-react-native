@@ -1,7 +1,11 @@
 import React from 'react';
 import {fireEvent, render, waitFor} from '@testing-library/react-native';
 import Orders from '../../src/screens/Vendor/Orders';
-import {getServiceRequestsForTechnician} from '../../src/api/services.api';
+import {
+  getServiceRequestsForTechnician,
+  updateTechnicianServiceRequestStatus,
+} from '../../src/api/services.api';
+import {getIncomingMarketplaceOrders} from '../../src/api/marketplace.api';
 import {userContext} from '../../src/contexts/UserContext';
 
 jest.mock('../../src/utils/util', () => ({
@@ -72,7 +76,7 @@ jest.mock('../../src/components/Vendor/Order/OrderList', () => {
   const ReactLocal = require('react');
   const {View, Text, TouchableOpacity} = require('react-native');
 
-  return ({orderLists, onPress}: any) =>
+  return ({orderLists, onPress, onQuickStatusUpdate}: any) =>
     ReactLocal.createElement(
       View,
       null,
@@ -84,13 +88,24 @@ jest.mock('../../src/components/Vendor/Order/OrderList', () => {
       ),
       ...orderLists.map((item: any) =>
         ReactLocal.createElement(
-          TouchableOpacity,
-          {
-            key: String(item.id),
-            testID: `orders-item-${item.id}`,
-            onPress: () => onPress?.(item),
-          },
-          ReactLocal.createElement(Text, null, item.name),
+          View,
+          {key: String(item.id)},
+          ReactLocal.createElement(
+            TouchableOpacity,
+            {
+              testID: `orders-item-${item.id}`,
+              onPress: () => onPress?.(item),
+            },
+            ReactLocal.createElement(Text, null, item.name),
+          ),
+          ReactLocal.createElement(
+            TouchableOpacity,
+            {
+              testID: `orders-quick-accept-${item.id}`,
+              onPress: () => onQuickStatusUpdate?.(item, 'accepted'),
+            },
+            ReactLocal.createElement(Text, null, 'Accept'),
+          ),
         ),
       ),
     );
@@ -109,6 +124,11 @@ jest.mock('../../src/contexts/UserContext', () => ({
 
 jest.mock('../../src/api/services.api', () => ({
   getServiceRequestsForTechnician: jest.fn(),
+  updateTechnicianServiceRequestStatus: jest.fn(),
+}));
+
+jest.mock('../../src/api/marketplace.api', () => ({
+  getIncomingMarketplaceOrders: jest.fn(),
 }));
 
 const mockOrders = [
@@ -154,6 +174,23 @@ describe('seller orders technician behavior', () => {
       },
     });
     (getServiceRequestsForTechnician as jest.Mock).mockResolvedValue(mockOrders);
+    (getIncomingMarketplaceOrders as jest.Mock).mockResolvedValue([
+      {
+        id: 'morder-1',
+        name: 'Sample Cocoa Bean Sack (50kg)',
+        status: 'New',
+        rawStatus: 'new',
+        requesterName: 'Customer One',
+        requesterPhone: '9000000000',
+        requesterEmail: 'customer1@example.com',
+        message: 'Need immediate delivery',
+      },
+    ]);
+    (updateTechnicianServiceRequestStatus as jest.Mock).mockResolvedValue({
+      ...mockOrders[2],
+      status: 'Accepted',
+      rawStatus: 'accepted',
+    });
   });
 
   it('filters requests by selected status using label or raw status', async () => {
@@ -207,7 +244,7 @@ describe('seller orders technician behavior', () => {
     });
   });
 
-  it('shows account-type guard for non-technician users', async () => {
+  it('shows account-type guard for non-seller users', async () => {
     (userContext as unknown as jest.Mock).mockReturnValue({
       user: {
         accountType: 'customer',
@@ -221,10 +258,52 @@ describe('seller orders technician behavior', () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText('Orders are currently available for technician accounts.'),
+        screen.getByText('Orders are currently available for seller accounts.'),
       ).toBeTruthy();
     });
 
     expect(getServiceRequestsForTechnician).not.toHaveBeenCalled();
+    expect(getIncomingMarketplaceOrders).not.toHaveBeenCalled();
+  });
+
+  it('updates request status from quick action and shows success text', async () => {
+    const screen = render(
+      <Orders navigation={{navigate: jest.fn()} as any} route={{} as any} />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('orders-count').props.children).toBe('3');
+    });
+
+    fireEvent.press(screen.getByTestId('orders-quick-accept-3'));
+
+    await waitFor(() => {
+      expect(updateTechnicianServiceRequestStatus).toHaveBeenCalledWith(3, 'accepted');
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Request updated: Accepted')).toBeTruthy();
+    });
+  });
+
+  it('loads incoming marketplace orders for farmer accounts', async () => {
+    (userContext as unknown as jest.Mock).mockReturnValue({
+      user: {
+        accountType: 'farmer',
+        profile: {professionType: 'farmer'},
+      },
+    });
+
+    const screen = render(
+      <Orders navigation={{navigate: jest.fn()} as any} route={{} as any} />,
+    );
+
+    await waitFor(() => {
+      expect(getIncomingMarketplaceOrders).toHaveBeenCalled();
+      expect(screen.getByTestId('orders-count').props.children).toBe('1');
+      expect(screen.getByTestId('orders-order').props.children).toBe(
+        'Sample Cocoa Bean Sack (50kg)',
+      );
+    });
   });
 });

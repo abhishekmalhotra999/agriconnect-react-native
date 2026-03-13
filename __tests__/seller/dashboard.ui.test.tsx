@@ -2,6 +2,7 @@ import {fireEvent, render, waitFor} from '@testing-library/react-native';
 import React from 'react';
 import Dashboard from '../../src/screens/Vendor/Dashboard';
 import {getMyMarketplaceProducts} from '../../src/api/marketplace.api';
+import {getMyServiceListings} from '../../src/api/services.api';
 import {getUserPreferences} from '../../src/api/preferences.api';
 
 jest.mock('../../src/utils/util', () => ({
@@ -35,13 +36,27 @@ jest.mock('../../src/api/marketplace.api', () => ({
   getMyMarketplaceProducts: jest.fn(),
 }));
 
+jest.mock('../../src/api/services.api', () => ({
+  getMyServiceListings: jest.fn(),
+}));
+
 jest.mock('../../src/api/preferences.api', () => ({
   getUserPreferences: jest.fn(),
+}));
+
+jest.mock('../../src/contexts/UserContext', () => ({
+  userContext: () => ({
+    user: {
+      accountType: 'farmer',
+    },
+    loggedIn: true,
+  }),
 }));
 
 describe('seller dashboard UI', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (getMyServiceListings as jest.Mock).mockResolvedValue([]);
   });
 
   it('renders dynamic inventory and setup details from API data', async () => {
@@ -123,8 +138,8 @@ describe('seller dashboard UI', () => {
 
     expect(screen.getByText('Products')).toBeTruthy();
     expect(screen.getByText('3')).toBeTruthy();
-    expect(screen.getByText('140.00')).toBeTruthy();
-    expect(screen.getByText('70.00')).toBeTruthy();
+    expect(screen.getByText('Active Listings')).toBeTruthy();
+    expect(screen.getByText('Pending Listings')).toBeTruthy();
     expect(screen.getByText('Published')).toBeTruthy();
     expect(screen.getAllByText('2').length).toBeGreaterThan(0);
     expect(screen.getByText('Draft')).toBeTruthy();
@@ -137,12 +152,18 @@ describe('seller dashboard UI', () => {
     expect(screen.getByText('pending')).toBeTruthy();
     expect(screen.getByText('Checklist')).toBeTruthy();
     expect(screen.getByText('4/6')).toBeTruthy();
-    expect(screen.getByText('Awaiting document review')).toBeTruthy();
+    expect(screen.getAllByText('Awaiting document review').length).toBeGreaterThan(0);
     expect(screen.getByText('Recent Products')).toBeTruthy();
     expect(screen.getByText('Tomatoes')).toBeTruthy();
 
     fireEvent.press(screen.getByText('Add Product'));
     expect(mockNavigate).toHaveBeenCalledWith('ManageMyProduct');
+
+    fireEvent.press(screen.getByText('Manage Listings'));
+    expect(mockNavigate).toHaveBeenCalledWith('MyProducts');
+
+    fireEvent.press(screen.getByText('My Orders'));
+    expect(mockNavigate).toHaveBeenCalledWith('Orders');
 
     expect(screen.getByTestId('dashboard-chart-data')).toBeTruthy();
   });

@@ -76,6 +76,7 @@ import {Product} from '../models/Product';
 import {Order} from '../models/order';
 import {User} from '../models/user';
 import MyAccount from '../screens/Common/Profile/MyAccount';
+import MyOrders from '../screens/Common/Profile/MyOrders';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useDispatch} from 'react-redux';
 import {authActions} from '../store/slices/auth.slice';
@@ -166,6 +167,7 @@ type BlogStackParamList = {
 type ProductStackParamList = {
   Products: undefined;
   ProductDetails: {product: Product};
+  Cart: undefined;
   Services: undefined;
   ServiceDetails: {product: Product};
   MyServiceRequests: undefined;
@@ -189,6 +191,7 @@ type RequestsStackParamList = {
 type VendorRootStackParamList = {
   Dashboard: undefined;
   DASHBOARD_TAB: undefined;
+  MARKETPLACE_TAB: undefined;
   Orders: undefined;
   MY_PRODUCTS: undefined;
   RECEIVED_ORDERS: undefined;
@@ -199,13 +202,17 @@ type VendorRootStackParamList = {
 type DashboardStackParamList = {
   Dashboard: undefined;
   MyProducts: undefined;
+  Orders: undefined;
   MyProductDetails: {product: Product};
+  OrderDetails: {order: Order};
   ManageMyProduct: {product?: Product};
 };
 
 type MyProductStackParamList = {
   MyProducts: undefined;
+  Orders: undefined;
   MyProductDetails: {product: Product};
+  OrderDetails: {order: Order};
   ManageMyProduct: {product?: Product};
 };
 
@@ -240,6 +247,7 @@ type ChatStackParamList = {
 type ProfileStachParamList = {
   ProfileHome: undefined;
   MyAccount: undefined;
+  MyOrders: undefined;
   PrivacyPolicy: undefined;
   HelpCenter: undefined;
 };
@@ -282,6 +290,8 @@ const ProfileStackNavigation = () => {
       screenOptions={{headerShown: false, ...transitionX}}>
       <ProfileStack.Screen name="ProfileHome" component={Profile} />
       <ProfileStack.Screen name="MyAccount" component={MyAccount} />
+      <ProfileStack.Screen name="MyOrders" component={MyOrders} />
+      <HeaderStack.Screen name="Cart" component={Cart} />
       <ProfileStack.Screen name="PrivacyPolicy" component={PrivacyPolicy} />
       <ProfileStack.Screen name="HelpCenter" component={HelpCenter} />
     </ProfileStack.Navigator>
@@ -323,6 +333,7 @@ const ChatStackNavigation = () => {
     <ChatStack.Navigator screenOptions={{headerShown: false, ...transitionX}}>
       <ChatStack.Screen name="Chats" component={Chats} />
       <ChatStack.Screen name="ChatRoom" component={ChatRoom} />
+      <HeaderStack.Screen name="Cart" component={Cart} />
       <HeaderStack.Screen
         name="InAppNotifications"
         component={InAppNotifications}
@@ -336,6 +347,7 @@ const BlogStackNavigation = () => {
   return (
     <BlogStack.Navigator screenOptions={{headerShown: false, ...transitionX}}>
       <BlogStack.Screen name="Blogs" component={Blogs} />
+      <HeaderStack.Screen name="Cart" component={Cart} />
       <HeaderStack.Screen
         name="InAppNotifications"
         component={InAppNotifications}
@@ -362,6 +374,7 @@ const LearnStackNavigation = () => {
       <LearnStack.Screen name="Courses" component={Courses} />
       <LearnStack.Screen name="Lesson" component={Lesson} />
       <LearnStack.Screen name="LessonDetail" component={LessonDetail} />
+      <HeaderStack.Screen name="Cart" component={Cart} />
       <HeaderStack.Screen
         name="InAppNotifications"
         component={InAppNotifications}
@@ -376,6 +389,7 @@ const ProductsStackNavigation = () => {
     <ProductsStack.Navigator screenOptions={{headerShown: false, ...transitionX}}>
       <ProductsStack.Screen name="Products" component={Products} />
       <ProductsStack.Screen name="ProductDetails" component={ProductDetails} />
+      <ProductsStack.Screen name="Cart" component={Cart} />
       <ProductsStack.Screen name="Services" component={Services} />
       <ProductsStack.Screen name="ServiceDetails" component={ServiceDetails} />
       <ProductsStack.Screen
@@ -408,6 +422,7 @@ const ServicesStackNavigation = () => {
         name="ServiceRequestDetails"
         component={ServiceRequestDetails}
       />
+      <HeaderStack.Screen name="Cart" component={Cart} />
       <HeaderStack.Screen
         name="InAppNotifications"
         component={InAppNotifications}
@@ -430,6 +445,7 @@ const RequestsStackNavigation = () => {
       />
       <RequestsStack.Screen name="Services" component={Services} />
       <RequestsStack.Screen name="ServiceDetails" component={ServiceDetails} />
+      <HeaderStack.Screen name="Cart" component={Cart} />
       <HeaderStack.Screen
         name="InAppNotifications"
         component={InAppNotifications}
@@ -446,14 +462,17 @@ const DashboardStackNavigation = () => {
       screenOptions={{headerShown: false, ...transitionX}}>
       <DashboardStack.Screen name="Dashboard" component={Dashboard} />
       <DashboardStack.Screen name="MyProducts" component={MyProducts} />
+      <DashboardStack.Screen name="Orders" component={Orders} />
       <DashboardStack.Screen
         name="MyProductDetails"
         component={MyProductDetails}
       />
+      <DashboardStack.Screen name="OrderDetails" component={OrderDetails} />
       <DashboardStack.Screen
         name="ManageMyProduct"
         component={ManageMyProduct}
       />
+      <HeaderStack.Screen name="Cart" component={Cart} />
       <HeaderStack.Screen name="Profile" component={ProfileStackNavigation} />
       <HeaderStack.Screen
         name="InAppNotifications"
@@ -468,14 +487,17 @@ const MyProductsStackNavigation = () => {
     <MyProductsStack.Navigator
       screenOptions={{headerShown: false, ...transitionX}}>
       <MyProductsStack.Screen name="MyProducts" component={MyProducts} />
+      <MyProductsStack.Screen name="Orders" component={Orders} />
       <MyProductsStack.Screen
         name="MyProductDetails"
         component={MyProductDetails}
       />
+      <MyProductsStack.Screen name="OrderDetails" component={OrderDetails} />
       <MyProductsStack.Screen
         name="ManageMyProduct"
         component={ManageMyProduct}
       />
+      <HeaderStack.Screen name="Cart" component={Cart} />
       <HeaderStack.Screen name="Profile" component={ProfileStackNavigation} />
       <HeaderStack.Screen
         name="InAppNotifications"
@@ -490,6 +512,7 @@ const OrdersStackNavigation = () => {
     <OrdersStack.Navigator screenOptions={{headerShown: false, ...transitionX}}>
       <OrdersStack.Screen name="Orders" component={Orders} />
       <OrdersStack.Screen name="OrderDetails" component={OrderDetails} />
+      <HeaderStack.Screen name="Cart" component={Cart} />
       <HeaderStack.Screen name="Profile" component={ProfileStackNavigation} />
       <HeaderStack.Screen
         name="InAppNotifications"
@@ -527,6 +550,14 @@ const OnboardingStackScreenNavigation = () => {
 // vendor tabs //
 const VendorBottomTabNavigation: React.FC = () => {
   const {scrollToTop} = useScrollContext();
+  const {user} = userContext();
+  const normalizedRole =
+    (user?.accountType || user?.profile?.professionType || '').toLowerCase?.() ||
+    '';
+  const isTechnician = normalizedRole === 'technician';
+  const primaryTabLabel = isTechnician ? 'Services' : 'Seller';
+  const listingsTabLabel = isTechnician ? 'Listings' : 'Products';
+  const requestsTabLabel = isTechnician ? 'Bookings' : 'Orders';
 
   return (
     <VendorTab.Navigator
@@ -559,7 +590,7 @@ const VendorBottomTabNavigation: React.FC = () => {
                     color: focused ? COLORS.primary : COLORS.grey,
                   },
                 ]}>
-                Seller
+                {primaryTabLabel}
               </Text>
             </>
           ),
@@ -571,6 +602,45 @@ const VendorBottomTabNavigation: React.FC = () => {
           ),
         }}
       />
+      {isTechnician ? (
+        <VendorTab.Screen
+          name="MARKETPLACE_TAB"
+          component={withTabTransition(ProductsStackNavigation)}
+          listeners={({navigation}) => ({
+            tabPress: () => {
+              const isAlreadyFocused = navigation.isFocused();
+              if (isAlreadyFocused) {
+                scrollToTop('Products');
+              }
+            },
+          })}
+          options={{
+            headerShown: false,
+            tabBarLabel: ({focused}) => (
+              <>
+                <Text
+                  style={[
+                    styles.label,
+                    {
+                      color: focused ? COLORS.primary : COLORS.grey,
+                    },
+                  ]}>
+                  Marketplace
+                </Text>
+              </>
+            ),
+            tabBarIcon: ({focused}) => (
+              <Image
+                source={farmSizeIcon}
+                style={[
+                  styles.icon,
+                  {tintColor: focused ? COLORS.primary : COLORS.grey},
+                ]}
+              />
+            ),
+          }}
+        />
+      ) : null}
       <VendorTab.Screen
         name="MY_PRODUCTS"
         component={withTabTransition(MyProductsStackNavigation)}
@@ -593,7 +663,7 @@ const VendorBottomTabNavigation: React.FC = () => {
                     color: focused ? COLORS.primary : COLORS.grey,
                   },
                 ]}>
-                Products
+                {listingsTabLabel}
               </Text>
             </>
           ),
@@ -627,7 +697,7 @@ const VendorBottomTabNavigation: React.FC = () => {
                     color: focused ? COLORS.primary : COLORS.grey,
                   },
                 ]}>
-                Orders
+                {requestsTabLabel}
               </Text>
             </>
           ),
@@ -915,12 +985,12 @@ const BottomTabNavigation: React.FC<{
       {showSellerTab ? (
         <Tab.Screen
           name="SELLER_TAB"
-          component={withTabTransition(DashboardStackNavigation)}
+          component={withTabTransition(MyProductsStackNavigation)}
           listeners={({navigation}) => ({
             tabPress: () => {
               const isAlreadyFocused = navigation.isFocused();
               if (isAlreadyFocused) {
-                scrollToTop('DASHBOARD_TAB');
+                scrollToTop('MY_PRODUCTS');
               }
             },
           })}
@@ -967,10 +1037,6 @@ const RootNavigator = () => {
   const normalizedRole =
     (user?.accountType || user?.profile?.professionType || '')
       .toLowerCase?.() || '';
-  const isSellerRole =
-    normalizedRole === 'vendor' ||
-    normalizedRole === 'farmer' ||
-    normalizedRole === 'technician';
   const isFarmerRole = normalizedRole === 'farmer';
   const rootFlowView = resolveRootFlowView({
     onBoarded,
@@ -999,7 +1065,7 @@ const RootNavigator = () => {
       })
       .catch(() => {
         if (!cancelled) {
-          setFarmerOnboardingCompleted(false);
+          setFarmerOnboardingCompleted(true);
         }
       })
       .finally(() => {

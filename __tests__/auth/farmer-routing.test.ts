@@ -48,16 +48,7 @@ describe('root flow routing for farmer journey', () => {
     ).toBe('FARMER_TABS');
   });
 
-  it('routes vendor and technician to seller tabs', () => {
-    expect(
-      resolveRootFlowView({
-        onBoarded: true,
-        loggedIn: true,
-        normalizedRole: 'vendor',
-        farmerOnboardingCompleted: true,
-      }),
-    ).toBe('SELLER_TABS');
-
+  it('routes technician to seller tabs', () => {
     expect(
       resolveRootFlowView({
         onBoarded: true,
@@ -66,6 +57,17 @@ describe('root flow routing for farmer journey', () => {
         farmerOnboardingCompleted: true,
       }),
     ).toBe('SELLER_TABS');
+  });
+
+  it('routes vendor to customer tabs to avoid seller role drift', () => {
+    expect(
+      resolveRootFlowView({
+        onBoarded: true,
+        loggedIn: true,
+        normalizedRole: 'vendor',
+        farmerOnboardingCompleted: true,
+      }),
+    ).toBe('CUSTOMER_TABS');
   });
 
   it('routes customer to customer tabs', () => {

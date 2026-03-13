@@ -1,5 +1,6 @@
 import apiClient from './apiClient';
 import {Product} from '../models/Product';
+import {Order} from '../models/order';
 import {comingSoon} from '../constants/images';
 import axios from 'axios';
 
@@ -34,6 +35,21 @@ type MarketplaceProduct = {
   rating?: number;
   rating_count?: number;
   reviews?: Array<{rating?: number}>;
+};
+
+type MarketplaceIncomingOrder = {
+  id: string | number;
+  name?: string;
+  amount?: string | number;
+  quantity?: number;
+  image_url?: string | null;
+  status?: string;
+  raw_status?: string;
+  created_at?: string;
+  requester_name?: string;
+  requester_phone?: string;
+  requester_email?: string;
+  message?: string;
 };
 
 export type MarketplaceReview = {
@@ -162,6 +178,30 @@ const parseApiError = (error: unknown): string => {
   return 'Unable to connect to the server.';
 };
 
+const mapMarketplaceIncomingOrder = (item: MarketplaceIncomingOrder): Order => {
+  const imageUrl = normalizeAssetUrl(item.image_url);
+  const amountValue =
+    typeof item.amount === 'string'
+      ? item.amount
+      : `R${Number(item.amount || 0) || 0}`;
+
+  return {
+    id: item.id,
+    name: String(item.name || 'Marketplace Order Request'),
+    amount: amountValue,
+    quantity: Number(item.quantity || 1) || 1,
+    image: imageUrl ? {uri: imageUrl} : fallbackImage,
+    status: String(item.status || 'New'),
+    createdAt: String(item.created_at || '').slice(0, 10),
+    requesterName: String(item.requester_name || ''),
+    requesterPhone: String(item.requester_phone || ''),
+    requesterEmail: String(item.requester_email || ''),
+    message: String(item.message || ''),
+    rawStatus: String(item.raw_status || 'new'),
+    emailDeliveryStatus: undefined,
+  };
+};
+
 type UpsertMarketplaceProductPayload = {
   title: string;
   description?: string;
@@ -171,6 +211,7 @@ type UpsertMarketplaceProductPayload = {
   stockQuantity: number;
   status: 'draft' | 'published';
   mainPictureUrl?: string;
+  galleryUrls?: string[];
   mainPictureFile?: {
     uri: string;
     type?: string;
@@ -200,6 +241,10 @@ const buildUpsertPayload = (payload: UpsertMarketplaceProductPayload) => {
     formData.append('main_picture_url', payload.mainPictureUrl);
   }
 
+  if (Array.isArray(payload.galleryUrls)) {
+    formData.append('gallery_urls', JSON.stringify(payload.galleryUrls));
+  }
+
   if (payload.mainPictureFile?.uri) {
     formData.append('main_picture_file', {
       uri: payload.mainPictureFile.uri,
@@ -220,6 +265,37 @@ const buildUpsertPayload = (payload: UpsertMarketplaceProductPayload) => {
   }
 
   return formData;
+};
+
+const parseGalleryUrls = (source?: string[] | string | null): string[] => {
+  if (!source) {
+    return [];
+  }
+
+  if (Array.isArray(source)) {
+    return source.map(item => String(item || '').trim()).filter(Boolean);
+  }
+
+  if (typeof source === 'string') {
+    const value = source.trim();
+    if (!value) {
+      return [];
+    }
+
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) {
+        return parsed.map(item => String(item || '').trim()).filter(Boolean);
+      }
+    } catch (_error) {
+      return value
+        .split(',')
+        .map(item => item.trim())
+        .filter(Boolean);
+    }
+  }
+
+  return [];
 };
 
 const toGalleryImages = (item: MarketplaceProduct) => {
@@ -286,9 +362,13 @@ export const getMyMarketplaceProducts = () => {
 export const getMarketplaceProductDetail = (id: number) => {
   return apiClient.get(`/api/marketplace/products/${id}`).then(response => {
     const payload = (response.data || {}) as MarketplaceProduct;
+    const galleryUrls = parseGalleryUrls(payload.gallery_urls)
+      .map(item => normalizeAssetUrl(item))
+      .filter((item): item is string => Boolean(item));
     return {
       product: mapMarketplaceProduct(payload),
       images: toGalleryImages(payload),
+      galleryUrls,
     };
   });
 };
@@ -348,6 +428,53 @@ export const updateMarketplaceProduct = (
       },
     })
     .then(response => mapMarketplaceProduct(response.data as MarketplaceProduct))
+    .catch(error => {
+      throw new Error(parseApiError(error));
+    });
+};
+
+export const deleteMarketplaceProduct = (productId: number) => {
+  return apiClient
+    .delete(`/api/marketplace/products/${productId}`)
+    .then(() => true)
+    .catch(error => {
+      throw new Error(parseApiError(error));
+    });
+};
+
+export const createMarketplaceOrderRequest = (
+  productId: number,
+  payload?: {
+    quantity?: number;
+    message?: string;
+    requesterName?: string;
+    requesterPhone?: string;
+    requesterEmail?: string;
+  },
+) => {
+  return apiClient
+    .post(`/api/marketplace/products/${productId}/order-requests`, {
+      quantity: Number(payload?.quantity || 1),
+      message: payload?.message || undefined,
+      requester_name: payload?.requesterName || undefined,
+      requester_phone: payload?.requesterPhone || undefined,
+      requester_email: payload?.requesterEmail || undefined,
+    })
+    .then(response => response.data)
+    .catch(error => {
+      throw new Error(parseApiError(error));
+    });
+};
+
+export const getIncomingMarketplaceOrders = () => {
+  return apiClient
+    .get('/api/marketplace/products/incoming-orders')
+    .then(response => {
+      const rows = Array.isArray(response.data) ? response.data : [];
+      return rows.map((item: MarketplaceIncomingOrder) =>
+        mapMarketplaceIncomingOrder(item),
+      );
+    })
     .catch(error => {
       throw new Error(parseApiError(error));
     });

@@ -18,11 +18,13 @@ import ErrorText from '../../../components/UI/ErrorText';
 import Separator from '../../../components/UI/Separator';
 import {
   createMarketplaceProduct,
+  getMarketplaceProductDetail,
   updateMarketplaceProduct,
 } from '../../../api/marketplace.api';
 import {
   createServiceListing,
   getServiceCategories,
+  getServiceListingDetail,
   ServiceCategoryOption,
   updateServiceListing,
 } from '../../../api/services.api';
@@ -60,6 +62,7 @@ type UploadImage = {
   uri: string;
   type?: string;
   fileName?: string;
+  isRemote?: boolean;
 };
 
 const ManageMyProduct: React.FC<ManageMyProductScreenProps> = ({
@@ -138,6 +141,60 @@ const ManageMyProduct: React.FC<ManageMyProductScreenProps> = ({
     };
   }, [isTechnician]);
 
+  useEffect(() => {
+    let mounted = true;
+
+    if (!isEdit || !product?.id) {
+      return;
+    }
+
+    const loadExistingMedia = async () => {
+      try {
+        const detail = isTechnician
+          ? await getServiceListingDetail(Number(product.id))
+          : await getMarketplaceProductDetail(Number(product.id));
+
+        if (!mounted) {
+          return;
+        }
+
+        const remoteThumb = String(detail?.product?.imageUrl || '').trim();
+        if (remoteThumb) {
+          setThumbnailImage({
+            uri: remoteThumb,
+            type: 'image/jpeg',
+            fileName: 'existing-thumbnail.jpg',
+            isRemote: true,
+          });
+        }
+
+        const remoteGallery = Array.isArray((detail as any)?.galleryUrls)
+          ? (detail as any).galleryUrls
+          : [];
+        const normalizedGallery = remoteGallery
+          .map((uri: string, index: number) => ({
+            uri: String(uri || '').trim(),
+            type: 'image/jpeg',
+            fileName: `existing-gallery-${index + 1}.jpg`,
+            isRemote: true,
+          }))
+          .filter((item: UploadImage) => Boolean(item.uri));
+
+        setGalleryImages(normalizedGallery);
+      } catch {
+        if (mounted) {
+          setGalleryImages([]);
+        }
+      }
+    };
+
+    loadExistingMedia();
+
+    return () => {
+      mounted = false;
+    };
+  }, [isEdit, isTechnician, product?.id]);
+
   const submitProduct = async (status: 'draft' | 'published') => {
     if (!title.trim()) {
       setError('Title is required.');
@@ -160,8 +217,12 @@ const ManageMyProduct: React.FC<ManageMyProductScreenProps> = ({
         salePrice: parseCurrencyValue(salePrice),
         stockQuantity: Number(stockQuantity || 0),
         status,
-        mainPictureFile: thumbnailImage || undefined,
-        galleryFiles: galleryImages,
+        mainPictureUrl: thumbnailImage?.isRemote ? thumbnailImage.uri : undefined,
+        mainPictureFile: thumbnailImage?.isRemote ? undefined : thumbnailImage || undefined,
+        galleryUrls: galleryImages
+          .filter(image => image.isRemote)
+          .map(image => image.uri),
+        galleryFiles: galleryImages.filter(image => !image.isRemote),
       };
 
       if (isTechnician) {
@@ -178,7 +239,10 @@ const ManageMyProduct: React.FC<ManageMyProductScreenProps> = ({
           isActive: status === 'published',
           mainPictureUrl: remoteThumbnail ? thumbnailUri : undefined,
           mainPictureFile: !remoteThumbnail ? thumbnailImage || undefined : undefined,
-          galleryFiles: galleryImages,
+          galleryUrls: galleryImages
+            .filter(image => image.isRemote)
+            .map(image => image.uri),
+          galleryFiles: galleryImages.filter(image => !image.isRemote),
         };
 
         if (isEdit && product?.id) {
@@ -224,6 +288,7 @@ const ManageMyProduct: React.FC<ManageMyProductScreenProps> = ({
         uri: asset.uri as string,
         type: asset.type,
         fileName: asset.fileName,
+        isRemote: false,
       }));
   };
 

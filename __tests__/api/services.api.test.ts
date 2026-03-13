@@ -1,4 +1,5 @@
 import {
+  cancelMyServiceRequest,
   createServiceListingReview,
   createServiceListing,
   createServiceRequest,
@@ -19,6 +20,7 @@ jest.mock('../../src/api/apiClient', () => ({
     get: jest.fn(),
     post: jest.fn(),
     put: jest.fn(),
+    patch: jest.fn(),
     defaults: {
       baseURL: 'http://localhost:3000',
     },
@@ -29,6 +31,7 @@ const mockedClient = apiClient as unknown as {
   get: jest.Mock;
   post: jest.Mock;
   put: jest.Mock;
+  patch: jest.Mock;
 };
 
 describe('services.api', () => {
@@ -36,6 +39,7 @@ describe('services.api', () => {
     mockedClient.get.mockReset();
     mockedClient.post.mockReset();
     mockedClient.put.mockReset();
+    mockedClient.patch.mockReset();
   });
 
   it('maps my service listings to Product cards', async () => {
@@ -385,5 +389,33 @@ describe('services.api', () => {
         },
       },
     );
+  });
+
+  it('cancels own service request and maps response to Order model', async () => {
+    mockedClient.patch.mockResolvedValueOnce({
+      data: {
+        status: 'ok',
+        request: {
+          id: 93,
+          status: 'cancelled',
+          created_at: '2025-03-10T10:00:00.000Z',
+          requester_name: 'Riya',
+          requester_phone: '9666666666',
+          listing: {
+            title: 'Irrigation Diagnostics',
+          },
+        },
+      },
+    });
+
+    const result = await cancelMyServiceRequest(93);
+
+    expect(mockedClient.patch).toHaveBeenCalledWith('/api/services/requests/93/cancel');
+    expect(result).toMatchObject({
+      id: 93,
+      name: 'Irrigation Diagnostics',
+      status: 'Cancelled',
+      rawStatus: 'cancelled',
+    });
   });
 });

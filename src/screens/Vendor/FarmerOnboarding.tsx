@@ -110,8 +110,14 @@ const FarmerOnboardingScreen: React.FC<FarmerOnboardingProps> = ({
 
       await saveFarmerOnboarding(payload);
       onCompleted();
-    } catch (e) {
-      setError('Failed to save store setup. Please try again.');
+    } catch (e: any) {
+      const apiError =
+        e?.response?.data?.errors ||
+        e?.response?.data?.message ||
+        e?.message;
+      setError(
+        String(apiError || 'Failed to save store setup. Please try again.'),
+      );
     } finally {
       setSaving(false);
     }

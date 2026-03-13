@@ -58,6 +58,11 @@ const Profile: React.FC<ProfileScreenProps> = ({navigation}) => {
           icon={userLiteIcon}
         />
         <ProfileCard
+          title="My Orders"
+          onPress={onPress.bind(this, 'MyOrders')}
+          icon={myFieldsIcon}
+        />
+        <ProfileCard
           title="Privacy Policy"
           onPress={onPress.bind(this, 'PrivacyPolicy')}
           icon={privacyIcon}

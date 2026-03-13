@@ -37,6 +37,7 @@ export type CustomerStackParamList = {
   ChatRoom: { chatId: number };
   Profile: undefined;
   MyAccount: undefined;
+  MyOrders: undefined;
   InAppNotifications: undefined;
   Cart: undefined;
   Products: undefined;
@@ -83,6 +84,7 @@ export type ChatsScreenNavigationProp = StackNavigationProp<CustomerStackParamLi
 export type ChatRoomScreenNavigationProp = StackNavigationProp<CustomerStackParamList, 'ChatRoom'>;
 export type ProfileScreenNavigationProp = StackNavigationProp<CustomerStackParamList, 'Profile'>;
 export type MyAccountScreenNavigationProp = StackNavigationProp<CustomerStackParamList, 'MyAccount'>;
+export type MyOrdersScreenNavigationProp = StackNavigationProp<CustomerStackParamList, 'MyOrders'>;
 export type CartScreenNavigationProp = StackNavigationProp<CustomerStackParamList, 'Cart'>;
 export type InAppNotificationsScreenNavigationProp = StackNavigationProp<CustomerStackParamList, 'InAppNotifications'>;
 export type ProductsScreenNavigationProp = StackNavigationProp<CustomerStackParamList, 'Products'>;
@@ -119,6 +121,7 @@ export type ChatsScreenRouteProp = RouteProp<CustomerStackParamList, 'Chats'>;
 export type ChatRoomScreenRouteProp = RouteProp<CustomerStackParamList, 'ChatRoom'>;
 export type ProfileScreenRouteProp = RouteProp<CustomerStackParamList, 'Profile'>;
 export type MyAccountScreenRouteProp = RouteProp<CustomerStackParamList, 'MyAccount'>;
+export type MyOrdersScreenRouteProp = RouteProp<CustomerStackParamList, 'MyOrders'>;
 export type CartScreenRouteProp = RouteProp<CustomerStackParamList, 'Cart'>;
 export type InAppNotificationsScreenRouteProp = RouteProp<CustomerStackParamList, 'InAppNotifications'>;
 export type ProductsScreenRouteProp = RouteProp<CustomerStackParamList, 'Products'>;
@@ -264,6 +267,11 @@ export interface ProfileScreenProps {
 export interface MyAccountScreenProps {
   navigation: MyAccountScreenNavigationProp;
   route: MyAccountScreenRouteProp;
+}
+
+export interface MyOrdersScreenProps {
+  navigation: MyOrdersScreenNavigationProp;
+  route: MyOrdersScreenRouteProp;
 }
 
 export interface CartScreenProps {

@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet } from 'react-native';
+import {useWindowDimensions} from 'react-native';
 import MyProductItem from './MyProductItem';
 import List from '../../UI/List';
 import { normalize } from '../../../utils/util';
@@ -10,8 +11,10 @@ interface MyProductListProps {
   onPress: (product: Product) => void;
   onEdit?: (product: Product) => void;
   onTogglePublish?: (product: Product) => void;
+  onDelete?: (product: Product) => void;
   showPublishToggle?: boolean;
   togglingProductId?: number | string | null;
+  deletingProductId?: number | string | null;
 }
 
 const MyProductList: React.FC<MyProductListProps> = ({ 
@@ -19,30 +22,39 @@ const MyProductList: React.FC<MyProductListProps> = ({
   onPress,
   onEdit,
   onTogglePublish,
+  onDelete,
   showPublishToggle = true,
   togglingProductId,
+  deletingProductId,
 }) => {
+  const {width} = useWindowDimensions();
+  const isCompactGrid = width >= 700;
+  const numColumns = isCompactGrid ? 2 : 1;
+
   return (
     <List
       scrollEnabled={false}
       showsHorizontalScrollIndicator={false}
       showsVerticalScrollIndicator={false}
       data={myProductLists}
-      numColumns={2}
+      numColumns={numColumns}
       renderItem={({ item }) => (
         <MyProductItem
           onPress={() => onPress(item)}
           onEdit={onEdit}
           onTogglePublish={onTogglePublish}
+          onDelete={onDelete}
           showPublishToggle={showPublishToggle}
           toggling={String(togglingProductId) === String(item.id)}
+          deleting={String(deletingProductId) === String(item.id)}
+          compact={isCompactGrid}
           item={item}
         />
       )}
       separatorStyle={styles.separator}
       contentContainerStyle={styles.contentContainerStyle}
       keyExtractor={(item) => item.id.toString()}
-      columnWrapperStyle={styles.columnWrapper}
+      columnWrapperStyle={numColumns > 1 ? styles.columnWrapper : undefined}
     />
   );
 };

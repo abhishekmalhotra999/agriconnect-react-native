@@ -8,11 +8,18 @@ import { Order } from '../../../models/order';
 interface OrderListProps {
   orderLists: Order[];
   onPress: (order: Order) => void;
+  onQuickStatusUpdate?: (
+    order: Order,
+    status: 'accepted' | 'rejected' | 'in_progress' | 'completed' | 'resolved' | 'closed',
+  ) => void;
+  updatingOrderId?: string | number | null;
 }
 
 const OrderList: React.FC<OrderListProps> = ({ 
   orderLists,
-  onPress
+  onPress,
+  onQuickStatusUpdate,
+  updatingOrderId,
 }) => {
   return (
     <List
@@ -21,7 +28,12 @@ const OrderList: React.FC<OrderListProps> = ({
       showsVerticalScrollIndicator={false}
       data={orderLists}
       renderItem={({ item }) => (
-        <OrderItem onPress={() => onPress(item)} item={item}/>
+        <OrderItem
+          onPress={() => onPress(item)}
+          item={item}
+          onQuickStatusUpdate={onQuickStatusUpdate}
+          isUpdating={String(updatingOrderId || '') === String(item.id)}
+        />
       )}
       separatorStyle={styles.separator}
       contentContainerStyle={styles.contentContainerStyle}

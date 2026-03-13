@@ -9,11 +9,18 @@ type OrderInfoProps = {
 }
 
 const OrderInfo: React.FC<OrderInfoProps> = ({ order }) => {
+  const summaryRows: Array<{label: string; value: string | number}> = [
+    {label: 'status', value: order.status || '-'},
+    {label: 'created', value: order.createdAt || '-'},
+    {label: 'price', value: order.amount || '-'},
+    {label: 'quantity', value: Number(order.quantity || 0) || 0},
+  ];
+
   return (
     <>
-    {Object.entries(order).map(([key, value]) => (
-      <Item key={key} label={key} value={value}/>
-    ))}
+      {summaryRows.map(row => (
+        <Item key={row.label} label={row.label} value={row.value} />
+      ))}
     </>
   );
 };

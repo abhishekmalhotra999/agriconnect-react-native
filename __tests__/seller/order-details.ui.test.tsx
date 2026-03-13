@@ -30,7 +30,26 @@ jest.mock('../../src/components/Vendor/Order/OrderInfo', () => {
   return () => ReactLocal.createElement(Text, {testID: 'order-info'}, 'order-info');
 });
 
+const baseOrder = {
+  id: 17,
+  name: 'Pump Repair',
+  image: {},
+  price: 'R100',
+  status: 'Pending',
+  createdAt: '2026-03-10',
+  requesterName: 'Asha',
+  requesterPhone: '9111111111',
+  requesterEmail: 'asha@example.com',
+  message: 'Need support for irrigation line.',
+  emailDeliveryStatus: 'sent',
+  rawStatus: 'new',
+};
+
 describe('seller order details screen', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   it('renders request metadata fields for technician request details', () => {
     const screen = render(
       <OrderDetails
@@ -39,20 +58,7 @@ describe('seller order details screen', () => {
           key: 'OrderDetails',
           name: 'OrderDetails',
           params: {
-            order: {
-              id: 17,
-              name: 'Pump Repair',
-              image: {},
-              price: 'R100',
-              status: 'Pending',
-              createdAt: '2026-03-10',
-              requesterName: 'Asha',
-              requesterPhone: '9111111111',
-              requesterEmail: 'asha@example.com',
-              message: 'Need support for irrigation line.',
-              emailDeliveryStatus: 'sent',
-              rawStatus: 'new',
-            },
+            order: baseOrder,
           },
         } as any}
       />,
@@ -71,6 +77,8 @@ describe('seller order details screen', () => {
     expect(screen.getByText('sent')).toBeTruthy();
     expect(screen.getByText('raw status')).toBeTruthy();
     expect(screen.getByText('new')).toBeTruthy();
+    expect(screen.getByTestId('status-action-accepted')).toBeTruthy();
+    expect(screen.getByTestId('status-action-rejected')).toBeTruthy();
   });
 
   it('shows fallback placeholders when request metadata is missing', () => {
@@ -98,5 +106,48 @@ describe('seller order details screen', () => {
     expect(screen.getByText('unknown')).toBeTruthy();
     expect(screen.getByText('raw status')).toBeTruthy();
     expect(screen.getAllByText('-').length).toBeGreaterThan(0);
+  });
+
+  it('shows accepted-state actions for accepted raw status', () => {
+    const screen = render(
+      <OrderDetails
+        navigation={{goBack: jest.fn()} as any}
+        route={{
+          key: 'OrderDetails',
+          name: 'OrderDetails',
+          params: {
+            order: {
+              ...baseOrder,
+              status: 'Accepted',
+              rawStatus: 'accepted',
+            },
+          },
+        } as any}
+      />,
+    );
+
+    expect(screen.getByTestId('status-action-in_progress')).toBeTruthy();
+    expect(screen.getByTestId('status-action-closed')).toBeTruthy();
+  });
+
+  it('shows resolved-state action for resolved raw status', () => {
+    const screen = render(
+      <OrderDetails
+        navigation={{goBack: jest.fn()} as any}
+        route={{
+          key: 'OrderDetails',
+          name: 'OrderDetails',
+          params: {
+            order: {
+              ...baseOrder,
+              status: 'Resolved',
+              rawStatus: 'resolved',
+            },
+          },
+        } as any}
+      />,
+    );
+
+    expect(screen.getByTestId('status-action-closed')).toBeTruthy();
   });
 });

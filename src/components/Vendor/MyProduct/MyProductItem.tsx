@@ -9,8 +9,11 @@ type MyProductItemProps = {
   onPress: (product: Product) => void;
   onEdit?: (product: Product) => void;
   onTogglePublish?: (product: Product) => void;
+  onDelete?: (product: Product) => void;
   showPublishToggle?: boolean;
   toggling?: boolean;
+  deleting?: boolean;
+  compact?: boolean;
 };
 
 const MyProductItem: React.FC<MyProductItemProps> = ({
@@ -18,8 +21,11 @@ const MyProductItem: React.FC<MyProductItemProps> = ({
   onPress,
   onEdit,
   onTogglePublish,
+  onDelete,
   showPublishToggle = true,
   toggling = false,
+  deleting = false,
+  compact = false,
 }) => {
   const statusText = item.status === 'published' ? 'Published' : 'Draft';
   const statusColor = item.status === 'published' ? '#1B9C5A' : '#A87400';
@@ -29,7 +35,7 @@ const MyProductItem: React.FC<MyProductItemProps> = ({
     <TouchableOpacity
       activeOpacity={0.92}
       onPress={() => onPress(item)}
-      style={styles.card}>
+      style={[styles.card, compact ? styles.compactCard : styles.fullCard]}>
       <Image source={item.image as any} style={styles.productImage} resizeMode="cover" />
 
       <View style={styles.content}>
@@ -42,7 +48,7 @@ const MyProductItem: React.FC<MyProductItemProps> = ({
           </View>
         </View>
 
-        <Text style={styles.description} numberOfLines={1}>
+        <Text style={styles.description} numberOfLines={compact ? 1 : 2}>
           {item.shortDescription || item.description || 'No description available'}
         </Text>
 
@@ -68,6 +74,13 @@ const MyProductItem: React.FC<MyProductItemProps> = ({
             style={styles.actionGhost}
             onPress={() => (onEdit ? onEdit(item) : onPress(item))}>
             <Text style={styles.actionGhostText}>Edit</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            testID={`my-product-delete-${item.id}`}
+            disabled={deleting}
+            style={styles.actionDelete}
+            onPress={() => onDelete?.(item)}>
+            <Text style={styles.actionDeleteText}>{deleting ? 'Deleting...' : 'Delete'}</Text>
           </TouchableOpacity>
           {showPublishToggle ? (
             <TouchableOpacity
@@ -95,7 +108,6 @@ const MyProductItem: React.FC<MyProductItemProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    width: '48.5%',
     backgroundColor: COLORS.white,
     borderRadius: normalize(14),
     overflow: 'hidden',
@@ -106,10 +118,17 @@ const styles = StyleSheet.create({
     shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.08,
     shadowRadius: 10,
+    marginBottom: normalize(6),
+  },
+  compactCard: {
+    width: '48.5%',
+  },
+  fullCard: {
+    width: '100%',
   },
   productImage: {
     width: '100%',
-    height: normalize(112),
+    height: normalize(130),
     backgroundColor: '#F8F9FB',
   },
   content: {
@@ -180,14 +199,21 @@ const styles = StyleSheet.create({
   actionsRow: {
     marginTop: normalize(8),
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    marginHorizontal: normalize(-3),
+    marginBottom: normalize(-3),
   },
   actionGhost: {
+    flexGrow: 1,
+    minWidth: normalize(88),
     borderWidth: 1,
     borderColor: '#D2D9E5',
     borderRadius: normalize(10),
-    paddingHorizontal: normalize(8),
+    paddingHorizontal: normalize(10),
     paddingVertical: normalize(4),
+    marginHorizontal: normalize(3),
+    marginBottom: normalize(6),
+    alignItems: 'center',
   },
   actionGhostText: {
     color: '#5A6374',
@@ -195,15 +221,36 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.XSMALL,
   },
   actionPrimary: {
+    flexGrow: 1,
+    minWidth: normalize(120),
     borderRadius: normalize(10),
     backgroundColor: COLORS.primary,
-    paddingHorizontal: normalize(8),
+    paddingHorizontal: normalize(10),
     paddingVertical: normalize(4),
+    marginHorizontal: normalize(3),
+    marginBottom: normalize(6),
+    alignItems: 'center',
   },
   actionWarning: {
     backgroundColor: '#C78A16',
   },
   actionPrimaryText: {
+    color: COLORS.white,
+    fontFamily: FONTS.medium,
+    fontSize: FONT_SIZES.XSMALL,
+  },
+  actionDelete: {
+    flexGrow: 1,
+    minWidth: normalize(88),
+    borderRadius: normalize(10),
+    backgroundColor: '#D24747',
+    paddingHorizontal: normalize(10),
+    paddingVertical: normalize(4),
+    marginHorizontal: normalize(3),
+    marginBottom: normalize(6),
+    alignItems: 'center',
+  },
+  actionDeleteText: {
     color: COLORS.white,
     fontFamily: FONTS.medium,
     fontSize: FONT_SIZES.XSMALL,

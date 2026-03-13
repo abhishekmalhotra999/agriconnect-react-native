@@ -8,9 +8,56 @@ import FastImage from '@d11/react-native-fast-image';
 type OrderItemProps = {
   item: Order;
   onPress: (order: Order) => void;
+  onQuickStatusUpdate?: (
+    order: Order,
+    status: 'accepted' | 'rejected' | 'in_progress' | 'completed' | 'resolved' | 'closed',
+  ) => void;
+  isUpdating?: boolean;
 }
 
-const OrderItem: React.FC<OrderItemProps> = ({ item, onPress }) => {
+const getQuickActions = (rawStatus?: string) => {
+  const normalized = String(rawStatus || '').toLowerCase();
+
+  if (normalized === 'new') {
+    return [
+      {label: 'Accept', value: 'accepted' as const},
+      {label: 'Reject', value: 'rejected' as const},
+    ];
+  }
+
+  if (normalized === 'accepted') {
+    return [
+      {label: 'Start', value: 'in_progress' as const},
+      {label: 'Close', value: 'closed' as const},
+    ];
+  }
+
+  if (normalized === 'in_progress') {
+    return [
+      {label: 'Complete', value: 'completed' as const},
+      {label: 'Resolve', value: 'resolved' as const},
+    ];
+  }
+
+  if (normalized === 'completed') {
+    return [{label: 'Resolve', value: 'resolved' as const}];
+  }
+
+  if (normalized === 'resolved') {
+    return [{label: 'Close', value: 'closed' as const}];
+  }
+
+  return [];
+};
+
+const OrderItem: React.FC<OrderItemProps> = ({
+  item,
+  onPress,
+  onQuickStatusUpdate,
+  isUpdating,
+}) => {
+  const quickActions = getQuickActions(item.rawStatus);
+
   return (
     <TouchableOpacity 
       onPress={() => onPress(item)} 
@@ -24,7 +71,9 @@ const OrderItem: React.FC<OrderItemProps> = ({ item, onPress }) => {
       />
       <View style={styles.details}>
         <View style={styles.flexStart}>
-          <Text style={styles.orderTitle}>{item.name}</Text>
+          <Text style={styles.orderTitle} numberOfLines={1}>
+            {item.name}
+          </Text>
         </View>
         <View style={[styles.inline, styles.flexStart]}>
           <Text style={styles.orderText}>{'Price:'} {item.amount}</Text>
@@ -36,6 +85,22 @@ const OrderItem: React.FC<OrderItemProps> = ({ item, onPress }) => {
             <Text style={styles.stockText}>{item.status}</Text>
           </View>
         </View>
+        {quickActions.length > 0 && !!onQuickStatusUpdate && (
+          <View style={styles.quickActionsWrap}>
+            {quickActions.map(action => (
+              <TouchableOpacity
+                key={action.value}
+                testID={`order-quick-action-${item.id}-${action.value}`}
+                style={styles.quickActionChip}
+                disabled={isUpdating}
+                onPress={() => onQuickStatusUpdate(item, action.value)}>
+                <Text style={styles.quickActionText}>
+                  {isUpdating ? 'Updating...' : action.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -54,7 +119,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.25,
     shadowRadius: 10,
-    height: normalize(90),
+    minHeight: normalize(90),
   },
   inline: {
     flexDirection: 'row',
@@ -71,6 +136,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: normalize(10),
     paddingVertical: normalize(4),
+    justifyContent: 'space-between',
   },
   orderTitle: {
     color: COLORS.black,
@@ -101,6 +167,24 @@ const styles = StyleSheet.create({
   flexEnd: {
     flex: 1, 
     alignItems: 'flex-end',
+  },
+  quickActionsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: normalize(2),
+  },
+  quickActionChip: {
+    backgroundColor: COLORS.primaryLight,
+    borderRadius: normalize(12),
+    paddingHorizontal: normalize(8),
+    paddingVertical: normalize(3),
+    marginRight: normalize(6),
+    marginTop: normalize(4),
+  },
+  quickActionText: {
+    color: COLORS.primary,
+    fontFamily: FONTS.semiBold,
+    fontSize: FONT_SIZES.XSMALL,
   },
 });
 

@@ -4,7 +4,6 @@ import {
   Text,
   View,
   ScrollView,
-  Platform,
   RefreshControl,
 } from 'react-native';
 import { DashboardScreenProps } from '../../../navigation/types';
@@ -20,16 +19,19 @@ import Price from '../../../components/UI/Price';
 import Chart from '../../../components/Vendor/Dashboard/Chart';
 import Button from '../../../components/UI/Button';
 import {getMyMarketplaceProducts} from '../../../api/marketplace.api';
+import {getMyServiceListings} from '../../../api/services.api';
 import {
   FarmerOnboarding,
   getUserPreferences,
 } from '../../../api/preferences.api';
 import {Product} from '../../../models/Product';
 import Loading from '../../../components/UI/Loading';
+import {userContext} from '../../../contexts/UserContext';
 
 const Dashboard: React.FC<DashboardScreenProps> = ({navigation}) => {
   const scrollViewRef = useRef<ScrollView>(null);
   const { registerScrollRef } = useScrollContext();
+  const {user} = userContext();
   const [products, setProducts] = useState<Product[]>([]);
   const [onboarding, setOnboarding] = useState<FarmerOnboarding>({
     completed: false,
@@ -43,6 +45,9 @@ const Dashboard: React.FC<DashboardScreenProps> = ({navigation}) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const normalizedRole =
+    String(user?.accountType || user?.profile?.professionType || '').toLowerCase();
+  const isTechnician = normalizedRole === 'technician';
 
   useEffect(() => {
     registerScrollRef('DASHBOARD_TAB', scrollViewRef);
@@ -54,7 +59,7 @@ const Dashboard: React.FC<DashboardScreenProps> = ({navigation}) => {
       setError(null);
 
       const [productsResponse, preferencesResponse] = await Promise.all([
-        getMyMarketplaceProducts(),
+        isTechnician ? getMyServiceListings() : getMyMarketplaceProducts(),
         getUserPreferences(),
       ]);
 
@@ -67,7 +72,7 @@ const Dashboard: React.FC<DashboardScreenProps> = ({navigation}) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isTechnician]);
 
   useEffect(() => {
     loadDashboardData();
@@ -140,12 +145,10 @@ const Dashboard: React.FC<DashboardScreenProps> = ({navigation}) => {
     };
   }, [products]);
 
-  const netSales = products.reduce(
-    (sum, product) =>
-      sum + Number(product.unitPrice || 0) * Number(product.stockQuantity || 0),
-    0,
-  );
-  const earnings = Math.round(netSales * 0.5);
+  const activeListings = stats.published;
+  const pendingListings = stats.draft;
+  const showSellerStatusBanner = !isTechnician && sellerStatus !== 'approved';
+  const listingLabel = isTechnician ? 'Manage Services' : 'Manage Products';
 
   return (
     <View style={styles.container}>
@@ -159,21 +162,48 @@ const Dashboard: React.FC<DashboardScreenProps> = ({navigation}) => {
         }
         >
         <Loading visible={refreshing} inline message="Refreshing seller dashboard" />
+        {showSellerStatusBanner ? (
+          <View style={styles.statusBanner}>
+            <Text style={styles.statusBannerTitle}>
+              {sellerStatus === 'rejected'
+                ? 'Seller approval rejected'
+                : 'Seller approval pending'}
+            </Text>
+            <Text style={styles.statusBannerBody}>
+              {sellerStatusReason ||
+                'Your listings can stay in draft until approval is completed.'}
+            </Text>
+          </View>
+        ) : null}
         <Chart labels={chartData.labels} values={chartData.values} />
         <Button
-          label="Add Product"
+          label={isTechnician ? 'Add Service' : 'Add Product'}
           style={styles.addButton}
           labelStyle={styles.addButtonLabel}
           onPress={() => (navigation as any).navigate('ManageMyProduct')}
           disabled={false}
         />
+        <Button
+          label={isTechnician ? 'My Bookings' : 'My Orders'}
+          style={styles.ordersButton}
+          labelStyle={styles.ordersButtonLabel}
+          onPress={() => (navigation as any).navigate('Orders')}
+          disabled={false}
+        />
+        <Button
+          label={listingLabel}
+          style={styles.manageButton}
+          labelStyle={styles.manageButtonLabel}
+          onPress={() => (navigation as any).navigate('MyProducts')}
+          disabled={false}
+        />
         <Separator/>
         <View style={styles.row}>
           <Card style={styles.cardStyle}>
-            <Price label="Net Sales" value={netSales.toFixed(2)} />
+            <Price label="Active Listings" value={String(activeListings)} />
           </Card>
           <Card style={styles.cardStyle}>
-            <Price label="Earnings" value={earnings.toFixed(2)} />
+            <Price label="Pending Listings" value={String(pendingListings)} />
           </Card>
         </View>
         {loading ? <Text style={styles.infoText}>Loading seller data...</Text> : null}
@@ -202,7 +232,16 @@ const Dashboard: React.FC<DashboardScreenProps> = ({navigation}) => {
         <Separator spacing={15} />
         <Card label="Recent Products">
           {products.length === 0 ? (
-            <Text style={styles.infoText}>No products yet.</Text>
+            <View>
+              <Text style={styles.infoText}>No listings yet.</Text>
+              <Button
+                label={listingLabel}
+                style={styles.inlineActionButton}
+                labelStyle={styles.inlineActionLabel}
+                onPress={() => (navigation as any).navigate('MyProducts')}
+                disabled={false}
+              />
+            </View>
           ) : (
             products.slice(0, 5).map(item => (
               <View style={styles.recentRow} key={String(item.id)}>
@@ -238,6 +277,26 @@ const styles = StyleSheet.create({
     color: COLORS.grey,
     marginTop: normalize(8),
   },
+  statusBanner: {
+    borderRadius: normalize(12),
+    borderWidth: 1,
+    borderColor: '#F2D2A6',
+    backgroundColor: '#FFF8EA',
+    paddingHorizontal: normalize(12),
+    paddingVertical: normalize(10),
+    marginBottom: normalize(8),
+  },
+  statusBannerTitle: {
+    color: '#9A6400',
+    fontWeight: '600',
+    fontSize: normalize(12),
+  },
+  statusBannerBody: {
+    marginTop: normalize(4),
+    color: '#8A6A36',
+    fontSize: normalize(11),
+    lineHeight: normalize(16),
+  },
   errorText: {
     color: COLORS.red,
     marginTop: normalize(8),
@@ -249,6 +308,35 @@ const styles = StyleSheet.create({
     borderRadius: normalize(30),
   },
   addButtonLabel: {
+    color: COLORS.primary,
+  },
+  ordersButton: {
+    marginTop: normalize(8),
+    borderWidth: 1,
+    borderColor: '#D2D9E5',
+    borderRadius: normalize(30),
+    backgroundColor: COLORS.white,
+  },
+  ordersButtonLabel: {
+    color: '#5A6374',
+  },
+  manageButton: {
+    marginTop: normalize(8),
+    borderRadius: normalize(30),
+    backgroundColor: COLORS.primary,
+  },
+  manageButtonLabel: {
+    color: COLORS.white,
+  },
+  inlineActionButton: {
+    marginTop: normalize(10),
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+    borderRadius: normalize(22),
+    paddingHorizontal: normalize(12),
+  },
+  inlineActionLabel: {
     color: COLORS.primary,
   },
   recentRow: {

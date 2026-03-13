@@ -2,6 +2,7 @@ import React from 'react';
 import {fireEvent, render, waitFor} from '@testing-library/react-native';
 import MyProducts from '../../src/screens/Vendor/MyProducts';
 import {getMyMarketplaceProducts, updateMarketplaceProduct} from '../../src/api/marketplace.api';
+import {getMyServiceListings, updateServiceListing} from '../../src/api/services.api';
 
 jest.mock('../../src/utils/util', () => ({
   normalize: (value: number) => value,
@@ -106,12 +107,7 @@ jest.mock('../../src/contexts/ScrollContext', () => ({
 }));
 
 jest.mock('../../src/contexts/UserContext', () => ({
-  userContext: jest.fn(() => ({
-    user: {
-      accountType: 'farmer',
-      profile: {professionType: 'farmer'},
-    },
-  })),
+  userContext: jest.fn(),
 }));
 
 jest.mock('../../src/api/marketplace.api', () => ({
@@ -121,7 +117,10 @@ jest.mock('../../src/api/marketplace.api', () => ({
 
 jest.mock('../../src/api/services.api', () => ({
   getMyServiceListings: jest.fn(),
+  updateServiceListing: jest.fn(),
 }));
+
+const {userContext} = jest.requireMock('../../src/contexts/UserContext');
 
 const createProduct = (id: number, name: string, status: 'draft' | 'published') => ({
   id,
@@ -145,11 +144,19 @@ const createProduct = (id: number, name: string, status: 'draft' | 'published') 
 describe('seller my products phase-4 behavior', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (userContext as jest.Mock).mockReturnValue({
+      user: {
+        accountType: 'farmer',
+        profile: {professionType: 'farmer'},
+      },
+    });
     (getMyMarketplaceProducts as jest.Mock).mockResolvedValue([
       createProduct(1, 'Mint Bundle', 'draft'),
       createProduct(2, 'Rice Pack', 'published'),
     ]);
     (updateMarketplaceProduct as jest.Mock).mockResolvedValue({});
+    (getMyServiceListings as jest.Mock).mockResolvedValue([]);
+    (updateServiceListing as jest.Mock).mockResolvedValue({});
   });
 
   it('filters by status and search query', async () => {
@@ -197,6 +204,9 @@ describe('seller my products phase-4 behavior', () => {
         expect.objectContaining({status: 'published'}),
       );
     });
+
+    fireEvent.press(screen.getByTestId('seller-my-orders'));
+    expect(navigate).toHaveBeenCalledWith('Orders');
   });
 
   it('shows backend reason when publish toggle is rejected', async () => {
@@ -218,6 +228,46 @@ describe('seller my products phase-4 behavior', () => {
       expect(
         screen.getByText('Seller approval pending. Complete onboarding first.'),
       ).toBeTruthy();
+    });
+  });
+
+  it('allows technician to manage and toggle own service listing status', async () => {
+    (userContext as jest.Mock).mockReturnValue({
+      user: {
+        accountType: 'technician',
+        profile: {professionType: 'technician'},
+      },
+    });
+
+    (getMyServiceListings as jest.Mock).mockResolvedValue([
+      {
+        ...createProduct(11, 'Soil Sensor Repair', 'published'),
+        serviceArea: 'Region East',
+        contactEmail: 'tech@example.com',
+      },
+    ]);
+
+    const navigate = jest.fn();
+    const screen = render(
+      <MyProducts navigation={{navigate} as any} route={{} as any} />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('seller-list-count').props.children).toBe('1');
+    });
+
+    fireEvent.press(screen.getByTestId('edit-11'));
+    expect(navigate).toHaveBeenCalledWith('ManageMyProduct', {
+      product: expect.objectContaining({id: 11}),
+    });
+
+    fireEvent.press(screen.getByTestId('toggle-11'));
+
+    await waitFor(() => {
+      expect(updateServiceListing).toHaveBeenCalledWith(
+        11,
+        expect.objectContaining({isActive: false, title: 'Soil Sensor Repair'}),
+      );
     });
   });
 });

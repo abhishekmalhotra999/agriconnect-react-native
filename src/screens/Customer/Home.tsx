@@ -66,6 +66,7 @@ const campaigns = [
 const Home: React.FC<HomeScreenProps> = ({ navigation }) => {
   useStatusBarStyle('light-content', 'dark-content');
   const {user} = userContext();
+  const userDetail = useAppSelector(state => state.auth.userDetail);
   const scrollViewRef = useRef<ScrollView>(null);
   const { registerScrollRef } = useScrollContext();
   const [preferencesLoading, setPreferencesLoading] = useState(true);
@@ -236,7 +237,8 @@ const Home: React.FC<HomeScreenProps> = ({ navigation }) => {
     [learningSnapshot.completedLessons, learningSnapshot.totalLessons, recentItems.length, savedCount],
   );
 
-  const greetingName = String(user?.name || '').trim() || 'Farmer';
+  const greetingName =
+    String(userDetail?.name || user?.name || '').trim() || 'Farmer';
 
   const searchResults = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();

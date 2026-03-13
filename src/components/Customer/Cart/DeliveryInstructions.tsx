@@ -17,15 +17,18 @@ const DeliveryInstructions: React.FC = () => {
 
 const styles = StyleSheet.create({
   btnStyle: {
-    borderWidth: 1, 
-    borderColor: COLORS.lightGrey,
+    borderWidth: 1,
+    borderColor: '#E6EBF3',
+    backgroundColor: '#FCFDFE',
+    borderRadius: normalize(14),
+    paddingVertical: normalize(12),
     marginBottom: normalize(20),
   },
   labelStyle: {
-    alignSelf: 'flex-start', 
-    color: COLORS.darkText,
-    fontFamily: FONTS.semiBold,
-    fontSize: FONT_SIZES.REGULAR,
+    alignSelf: 'flex-start',
+    color: '#444C5E',
+    fontFamily: FONTS.medium,
+    fontSize: FONT_SIZES.MEDIUM,
   }
 });
 

@@ -1,6 +1,8 @@
 import {
+  createMarketplaceOrderRequest,
   createMarketplaceProductReview,
   createMarketplaceProduct,
+  getIncomingMarketplaceOrders,
   getMarketplaceProductDetail,
   getMarketplaceProductReviews,
   getMarketplaceProducts,
@@ -214,5 +216,68 @@ describe('marketplace.api', () => {
         },
       },
     );
+  });
+
+  it('creates marketplace order request for a product', async () => {
+    mockedClient.post.mockResolvedValueOnce({
+      data: {
+        status: 'ok',
+        request: {id: 'morder-1'},
+      },
+    });
+
+    const result = await createMarketplaceOrderRequest(77, {
+      quantity: 2,
+      message: 'Need this urgently',
+    });
+
+    expect(mockedClient.post).toHaveBeenCalledWith(
+      '/api/marketplace/products/77/order-requests',
+      {
+        quantity: 2,
+        message: 'Need this urgently',
+        requester_name: undefined,
+        requester_phone: undefined,
+        requester_email: undefined,
+      },
+    );
+    expect(result.status).toBe('ok');
+  });
+
+  it('maps farmer incoming marketplace orders to Order shape', async () => {
+    mockedClient.get.mockResolvedValueOnce({
+      data: [
+        {
+          id: 'morder-9',
+          name: 'Groundnut Bag',
+          amount: 'R75',
+          quantity: 3,
+          image_url: '/uploads/groundnut.png',
+          status: 'New',
+          raw_status: 'new',
+          created_at: '2026-03-13T10:00:00.000Z',
+          requester_name: 'Customer One',
+          requester_phone: '9000000000',
+          requester_email: 'customer1@example.com',
+          message: 'Please confirm by tonight',
+        },
+      ],
+    });
+
+    const result = await getIncomingMarketplaceOrders();
+
+    expect(mockedClient.get).toHaveBeenCalledWith(
+      '/api/marketplace/products/incoming-orders',
+    );
+    expect(result[0]).toMatchObject({
+      id: 'morder-9',
+      name: 'Groundnut Bag',
+      amount: 'R75',
+      quantity: 3,
+      status: 'New',
+      rawStatus: 'new',
+      requesterName: 'Customer One',
+    });
+    expect(result[0].image).toEqual({uri: 'http://localhost:3000/uploads/groundnut.png'});
   });
 });

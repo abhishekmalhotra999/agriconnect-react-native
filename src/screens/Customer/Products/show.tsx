@@ -34,6 +34,7 @@ import {
   toggleSavedProduct,
   trackRecentProduct,
 } from '../../../api/preferences.api';
+import {addProductToCart} from '../../../store/cart.storage';
 
 const images = [
   require('../../../../assets/images/dump/Maximizing-Profits-in-Agriculture-The-Importance-of-Value-Ad.jpg'),
@@ -56,6 +57,8 @@ const ProductDetails: React.FC<ProductDetailsScreenProps> = ({ navigation, route
   const [reviewComment, setReviewComment] = useState('');
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [relatedLoading, setRelatedLoading] = useState(false);
+  const [addingToCart, setAddingToCart] = useState(false);
+  const [cartMessage, setCartMessage] = useState('');
 
   const sliderImages = useMemo(() => {
     if (images.length > 0) {
@@ -65,9 +68,19 @@ const ProductDetails: React.FC<ProductDetailsScreenProps> = ({ navigation, route
     return [productDetail.image];
   }, [images, productDetail]);
 
-  function goToCart() {
-    navigation.navigate('Cart')
-  }
+  const addToCart = async () => {
+    try {
+      setAddingToCart(true);
+      setError('');
+      setCartMessage('');
+      await addProductToCart(productDetail, 1);
+      setCartMessage('Added to cart. You can continue shopping or view cart.');
+    } catch (cartError: any) {
+      setError(String(cartError?.message || 'Unable to add product to cart.'));
+    } finally {
+      setAddingToCart(false);
+    }
+  };
 
   useEffect(() => {
     navigation.getParent()?.setOptions({
@@ -226,6 +239,16 @@ const ProductDetails: React.FC<ProductDetailsScreenProps> = ({ navigation, route
         >
         {loading && <ActivityIndicator style={styles.loader} color={COLORS.primary} />}
         {!!error && <ErrorText text={error} />}
+        {!!cartMessage && (
+          <View style={styles.cartMessageCard}>
+            <Text style={styles.requestSuccessText}>{cartMessage}</Text>
+            <TouchableOpacity
+              style={styles.viewCartButton}
+              onPress={() => navigation.navigate('Cart')}>
+              <Text style={styles.viewCartButtonText}>View Cart</Text>
+            </TouchableOpacity>
+          </View>
+        )}
         <ImageSlider
           images={sliderImages}
           dotColor={COLORS.primary}
@@ -330,9 +353,9 @@ const ProductDetails: React.FC<ProductDetailsScreenProps> = ({ navigation, route
           </View>
         </View>
         <CheckoutButton 
-          label="Add to cart" 
+          label={addingToCart ? 'Adding...' : 'Add to Cart'}
           style={styles.addToCart}
-          onPress={goToCart}
+          onPress={addToCart}
         />
       </View>
     </View>
@@ -544,6 +567,35 @@ const styles = StyleSheet.create({
     paddingVertical: normalize(10),
     paddingHorizontal: normalize(18),
     borderRadius: normalize(30),
+  },
+  requestSuccessText: {
+    color: COLORS.darkGreen,
+    fontSize: FONT_SIZES.SMALL,
+  },
+  cartMessageCard: {
+    marginTop: normalize(8),
+    marginHorizontal: normalize(16),
+    borderRadius: normalize(10),
+    borderWidth: 1,
+    borderColor: '#D7EEDC',
+    backgroundColor: '#F3FBF5',
+    paddingHorizontal: normalize(12),
+    paddingVertical: normalize(10),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  viewCartButton: {
+    marginLeft: normalize(10),
+    borderRadius: normalize(14),
+    paddingHorizontal: normalize(10),
+    paddingVertical: normalize(6),
+    backgroundColor: COLORS.primary,
+  },
+  viewCartButtonText: {
+    color: COLORS.white,
+    fontFamily: FONTS.semiBold,
+    fontSize: FONT_SIZES.XSMALL,
   },
   priceRow: {
     flexDirection: 'row',

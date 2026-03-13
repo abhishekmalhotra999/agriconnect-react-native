@@ -1,5 +1,5 @@
 import React, {useMemo, useState, useCallback} from 'react';
-import {ActivityIndicator, StyleSheet, View} from 'react-native';
+import {ActivityIndicator, StyleSheet, Text, View} from 'react-native';
 import { OrdersScreenProps } from '../../../navigation/types';
 import Header from '../../../containers/header';
 import { COLORS } from '../../../themes/styles';
@@ -12,7 +12,11 @@ import AnimatedHeaderScrollView from '../../../components/UI/AnimatedScrollView'
 import { Order } from '../../../models/order';
 import {useFocusEffect} from '@react-navigation/native';
 import {userContext} from '../../../contexts/UserContext';
-import {getServiceRequestsForTechnician} from '../../../api/services.api';
+import {
+  getServiceRequestsForTechnician,
+  updateTechnicianServiceRequestStatus,
+} from '../../../api/services.api';
+import {getIncomingMarketplaceOrders} from '../../../api/marketplace.api';
 import ErrorText from '../../../components/UI/ErrorText';
 
 const technicianOptions = [
@@ -42,14 +46,18 @@ const Orders: React.FC<OrdersScreenProps> = ({ navigation }) => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [updatingOrderId, setUpdatingOrderId] = useState<string | number | null>(null);
 
   const normalizedRole =
     (user?.accountType || user?.profile?.professionType || '').toLowerCase?.() ||
     '';
   const isTechnician = normalizedRole === 'technician';
+  const isFarmer = normalizedRole === 'farmer';
+  const isSeller = isTechnician || isFarmer;
 
   const loadOrders = useCallback(async () => {
-    if (!isTechnician) {
+    if (!isSeller) {
       setOrders([]);
       return;
     }
@@ -57,14 +65,17 @@ const Orders: React.FC<OrdersScreenProps> = ({ navigation }) => {
     try {
       setLoading(true);
       setError('');
-      const result = await getServiceRequestsForTechnician();
+      setSuccess('');
+      const result = isTechnician
+        ? await getServiceRequestsForTechnician()
+        : await getIncomingMarketplaceOrders();
       setOrders(result);
     } catch (loadError: any) {
       setError(loadError?.message || 'Unable to load requests.');
     } finally {
       setLoading(false);
     }
-  }, [isTechnician]);
+  }, [isSeller, isTechnician]);
 
   useFocusEffect(
     useCallback(() => {
@@ -111,6 +122,40 @@ const Orders: React.FC<OrdersScreenProps> = ({ navigation }) => {
     navigation.navigate('OrderDetails', { order })
   }
 
+  const updateOrderStatus = useCallback(
+    async (
+      order: Order,
+      nextStatus: 'accepted' | 'rejected' | 'in_progress' | 'completed' | 'resolved' | 'closed',
+    ) => {
+      try {
+        setUpdatingOrderId(order.id);
+        setError('');
+        setSuccess('');
+        const nextOrder = await updateTechnicianServiceRequestStatus(
+          Number(order.id),
+          nextStatus,
+        );
+
+        setOrders(prev =>
+          prev.map(item =>
+            String(item.id) === String(order.id)
+              ? {
+                  ...item,
+                  ...nextOrder,
+                }
+              : item,
+          ),
+        );
+        setSuccess(`Request updated: ${nextOrder.status}`);
+      } catch (statusError: any) {
+        setError(statusError?.message || 'Unable to update request status.');
+      } finally {
+        setUpdatingOrderId(null);
+      }
+    },
+    [],
+  );
+
   return (
     <View style={styles.container}>
       <Header />
@@ -121,14 +166,14 @@ const Orders: React.FC<OrdersScreenProps> = ({ navigation }) => {
         headerContent={(
           <>
           <SearchBar
-            placeholder={isTechnician ? 'Find service requests' : 'Find orders'}
+            placeholder={isTechnician ? 'Find service requests' : 'Find marketplace orders'}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
           </>
         )}
       >
-        {isTechnician && (
+        {isSeller && (
           <Filters
             options={technicianOptions}
             activeFilter={activeFilter}
@@ -136,14 +181,26 @@ const Orders: React.FC<OrdersScreenProps> = ({ navigation }) => {
           />
         )}
         {!!error && <ErrorText text={error} />}
-        {!isTechnician ? (
-          <ErrorText text="Orders are currently available for technician accounts." />
+        {!!success && <Text style={styles.successText}>{success}</Text>}
+        {!isSeller ? (
+          <ErrorText text="Orders are currently available for seller accounts." />
         ) : loading ? (
           <ActivityIndicator style={styles.loader} color={COLORS.primary} />
         ) : filteredOrders.length === 0 ? (
-          <ErrorText text="No service requests found for your filters." />
+          <ErrorText
+            text={
+              isTechnician
+                ? 'No service requests found for your filters.'
+                : 'No marketplace orders found for your filters.'
+            }
+          />
         ) : (
-          <OrderList orderLists={filteredOrders} onPress={editOrder} />
+          <OrderList
+            orderLists={filteredOrders}
+            onPress={editOrder}
+            onQuickStatusUpdate={isTechnician ? updateOrderStatus : undefined}
+            updatingOrderId={updatingOrderId}
+          />
         )}
       </AnimatedHeaderScrollView>
     </View>
@@ -164,6 +221,11 @@ const styles = StyleSheet.create({
   },
   loader: {
     marginTop: normalize(20),
+  },
+  successText: {
+    marginTop: normalize(10),
+    color: COLORS.darkGreen,
+    fontSize: normalize(11),
   },
 });
 

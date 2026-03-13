@@ -31,8 +31,7 @@ export const resolveRootFlowView = ({
 
   const role = String(normalizedRole || '').toLowerCase();
   const isFarmerRole = role === 'farmer';
-  const isSellerRole =
-    role === 'vendor' || role === 'farmer' || role === 'technician';
+  const isSellerRole = role === 'farmer' || role === 'technician';
 
   if (isFarmerRole && !farmerOnboardingCompleted) {
     return 'FARMER_SETUP';

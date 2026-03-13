@@ -209,6 +209,37 @@ const mapServiceRequestToOrder = (item: ServiceRequest): Order => {
   };
 };
 
+const parseGalleryUrls = (source?: string[] | string | null): string[] => {
+  if (!source) {
+    return [];
+  }
+
+  if (Array.isArray(source)) {
+    return source.map(item => String(item || '').trim()).filter(Boolean);
+  }
+
+  if (typeof source === 'string') {
+    const value = source.trim();
+    if (!value) {
+      return [];
+    }
+
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) {
+        return parsed.map(item => String(item || '').trim()).filter(Boolean);
+      }
+    } catch (_error) {
+      return value
+        .split(',')
+        .map(item => item.trim())
+        .filter(Boolean);
+    }
+  }
+
+  return [];
+};
+
 type UpsertServiceListingPayload = {
   title: string;
   description?: string;
@@ -346,15 +377,11 @@ export const getServiceListingDetail = (listingId: number) => {
   return apiClient.get(`/api/services/listings/${listingId}`).then(response => {
     const row = response.data as ServiceListing;
     const product = mapServiceListingToProduct(row);
-    const imageRows = Array.isArray(row.gallery_urls)
-      ? row.gallery_urls
-      : typeof row.gallery_urls === 'string'
-      ? [row.gallery_urls]
-      : [];
-    const images = imageRows
+    const galleryUrls = parseGalleryUrls(row.gallery_urls)
       .map(value => normalizeAssetUrl(value))
       .filter((value): value is string => Boolean(value))
-      .map(uri => ({uri}));
+      .map(uri => uri);
+    const images = galleryUrls.map(uri => ({uri}));
 
     return {
       product: {
@@ -363,6 +390,7 @@ export const getServiceListingDetail = (listingId: number) => {
         contactEmail: String(row.contact_email || row.technician?.email || '').trim() || undefined,
       },
       images,
+      galleryUrls,
       contactEmail: row.contact_email || row.technician?.email || '',
       technicianName: row.technician?.name || '',
     };
@@ -418,6 +446,33 @@ export const getMyServiceRequests = () => {
   });
 };
 
+export const updateTechnicianServiceRequestStatus = (
+  requestId: number,
+  status: 'accepted' | 'rejected' | 'in_progress' | 'completed' | 'resolved' | 'closed',
+) => {
+  return apiClient
+    .patch(`/api/services/requests/${requestId}/status`, {status})
+    .then(response => {
+      const row = response?.data?.request || {};
+      return mapServiceRequestToOrder(row as ServiceRequest);
+    })
+    .catch(error => {
+      throw new Error(parseApiError(error));
+    });
+};
+
+export const cancelMyServiceRequest = (requestId: number) => {
+  return apiClient
+    .patch(`/api/services/requests/${requestId}/cancel`)
+    .then(response => {
+      const row = response?.data?.request || {};
+      return mapServiceRequestToOrder(row as ServiceRequest);
+    })
+    .catch(error => {
+      throw new Error(parseApiError(error));
+    });
+};
+
 export const createServiceListing = (payload: UpsertServiceListingPayload) => {
   return apiClient
     .post('/api/services/listings', buildUpsertPayload(payload), {
@@ -442,6 +497,15 @@ export const updateServiceListing = (
       },
     })
     .then(response => mapServiceListingToProduct(response.data as ServiceListing))
+    .catch(error => {
+      throw new Error(parseApiError(error));
+    });
+};
+
+export const deleteServiceListing = (listingId: number) => {
+  return apiClient
+    .delete(`/api/services/listings/${listingId}`)
+    .then(() => true)
     .catch(error => {
       throw new Error(parseApiError(error));
     });

@@ -11,16 +11,16 @@ export type UserDetailUpdatePayload = {
 };
 
 export const updateUserDetail = async (userId: number, data: FormData) => {
-  try {
-    console.log(data instanceof FormData);
-    const response = await apiClient.put('/api/users/' + userId, data, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    console.log(response.data);
-    return response.data.user;
-  } catch (error) {
-    console.log(error);
-  }
+  const response = await apiClient.put('/api/users/' + userId, data, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+
+  return response.data.user;
+};
+
+export const getCurrentUserDetail = async () => {
+  const response = await apiClient.get('/api/users/me');
+  return response.data.user;
 };

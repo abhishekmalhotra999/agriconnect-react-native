@@ -3,6 +3,8 @@ import {View, Text, StyleSheet, Image} from 'react-native';
 import {COLORS, FONTS, FONT_SIZES} from '../../../themes/styles';
 import {userContext} from '../../../contexts/UserContext';
 import {profileImage} from '../../../constants/images';
+import apiClient from '../../../api/apiClient';
+import {useAppSelector} from '../../../store/storage';
 
 const dummyUser = {
   id: Date.now().toString(),
@@ -13,19 +15,43 @@ const dummyUser = {
 };
 
 interface IProfileUserCardsProps {
-  image: string;
+  image?: string | null;
 }
+
+const normalizeAssetUrl = (value?: string | null): string => {
+  if (!value) {
+    return '';
+  }
+
+  if (/^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(value)) {
+    return value;
+  }
+
+  const base = String(apiClient.defaults.baseURL || '').replace(/\/$/, '');
+  if (!base) {
+    return value;
+  }
+
+  return `${base}${value.indexOf('/') === 0 ? value : `/${value}`}`;
+};
 
 const ProfileUserCard = ({image}: IProfileUserCardsProps) => {
   const {user} = userContext();
-  const currentUser = user ?? dummyUser;
-  console.log('image is ', image);
+  const userDetail = useAppSelector(state => state.auth.userDetail);
+  const currentUser = userDetail ?? user ?? dummyUser;
+  const [hasImageError, setHasImageError] = React.useState(false);
+  const imageUri = normalizeAssetUrl(image);
+
+  React.useEffect(() => {
+    setHasImageError(false);
+  }, [image]);
 
   return (
     <View style={styles.section}>
       <View style={styles.iconCover}>
         <Image
-          source={image ? {uri: image} : profileImage}
+          source={imageUri && !hasImageError ? {uri: imageUri} : profileImage}
+          onError={() => setHasImageError(true)}
           style={styles.avatar}
         />
       </View>

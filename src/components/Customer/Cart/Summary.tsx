@@ -3,30 +3,38 @@ import { View, Text, StyleSheet } from 'react-native';
 import { COLORS, FONTS, FONT_SIZES } from '../../../themes/styles';
 import { normalize } from '../../../utils/util';
 
-const Summary: React.FC = () => {
+type SummaryProps = {
+  totalItems: number;
+  subtotalLabel: string;
+  deliveryLabel: string;
+  totalLabel: string;
+};
+
+const Summary: React.FC<SummaryProps> = ({
+  totalItems,
+  subtotalLabel,
+  deliveryLabel,
+  totalLabel,
+}) => {
   return (
     <View style={styles.container}>
       <Text style={styles.heading}>Invoice</Text>
       <View style={styles.card}>
         <View style={styles.row}>
-          <Text style={styles.label}>Original Price</Text>
-          <Text style={styles.value}>R100</Text>
+          <Text style={styles.label}>Items</Text>
+          <Text style={styles.value}>{totalItems}</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Subtotal</Text>
+          <Text style={styles.value}>{subtotalLabel}</Text>
         </View>
         <View style={styles.row}>
           <Text style={styles.label}>Delivery</Text>
-          <Text style={[styles.value, styles.positive]}>+R40</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>GST</Text>
-          <Text style={[styles.value, styles.positive]}>+R18</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Discount</Text>
-          <Text style={[styles.value, styles.negative]}>-R20</Text>
+          <Text style={[styles.value, styles.positive]}>+{deliveryLabel}</Text>
         </View>
         <View style={[styles.row, styles.totalRow]}>
           <Text style={styles.totalLabel}>Total</Text>
-          <Text style={styles.totalValue}>R138</Text>
+          <Text style={styles.totalValue}>{totalLabel}</Text>
         </View>
       </View>
     </View>
@@ -36,7 +44,7 @@ const Summary: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     backgroundColor: COLORS.white,
-    borderRadius: 10,
+    borderRadius: normalize(12),
     marginBottom: normalize(20),
   },
   heading: {
@@ -46,19 +54,22 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   card: {
-    paddingHorizontal: 12,
-    paddingTop: 12,
-    borderRadius: 12,
+    paddingHorizontal: normalize(12),
+    paddingVertical: normalize(12),
+    borderRadius: normalize(14),
     borderWidth: 1,
-    borderColor: COLORS.lightGrey,
+    borderColor: '#E6EBF3',
+    backgroundColor: '#FCFDFE',
   },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: normalize(10),
   },
   totalRow: {
-    paddingTop: 5,
+    paddingTop: normalize(8),
+    borderTopWidth: 1,
+    borderTopColor: '#E9EDF4',
   },
   label: {
     color: COLORS.darkText,
@@ -74,9 +85,6 @@ const styles = StyleSheet.create({
   },
   positive: {
     color: COLORS.red,
-  },
-  negative: {
-    color: COLORS.darkText,
   },
   totalLabel: {
     color: COLORS.darkGreen,
